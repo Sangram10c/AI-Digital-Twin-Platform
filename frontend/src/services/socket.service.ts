@@ -13,14 +13,14 @@ export const socketService = {
    */
   connect(_namespace?: string): void {
     // Implementation: io(WS_URL + namespace, { auth: { token } })
-    console.log(`[Socket] Connecting to ${WS_URL}`);
+    console.info(`[Socket] Connecting to ${WS_URL}`);
   },
 
   /**
    * Disconnect from the WebSocket server.
    */
   disconnect(): void {
-    console.log('[Socket] Disconnecting');
+    console.info('[Socket] Disconnecting');
   },
 
   /**

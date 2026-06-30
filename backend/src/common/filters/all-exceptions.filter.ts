@@ -23,9 +23,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : 'Internal server error';
 
+    let errorMessage = 'Internal server error';
+    if (typeof message === 'string') {
+      errorMessage = message;
+    } else if (message && typeof message === 'object' && 'message' in message) {
+      const msgObj = message;
+      errorMessage =
+        typeof msgObj.message === 'string'
+          ? msgObj.message
+          : String(msgObj.message);
+    }
+
     response.status(status).json({
       statusCode: status,
-      message: typeof message === 'string' ? message : (message as any).message,
+      message: errorMessage,
       timestamp: new Date().toISOString(),
     });
   }

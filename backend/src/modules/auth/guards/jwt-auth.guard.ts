@@ -10,7 +10,9 @@ import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 export class JwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     // Placeholder - will use PassportStrategy
-    const request = context.switchToHttp().getRequest();
+    const request = context
+      .switchToHttp()
+      .getRequest<{ headers: Record<string, string | undefined> }>();
     return !!request.headers.authorization;
   }
 }

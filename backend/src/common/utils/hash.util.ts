@@ -5,13 +5,13 @@
  * Placeholder - will use bcrypt or argon2.
  */
 export class HashUtil {
-  static async hash(password: string): Promise<string> {
+  static hash(password: string): Promise<string> {
     // Will use bcrypt.hash(password, 12)
-    return password;
+    return Promise.resolve(password);
   }
 
-  static async compare(password: string, hash: string): Promise<boolean> {
+  static compare(password: string, hash: string): Promise<boolean> {
     // Will use bcrypt.compare(password, hash)
-    return password === hash;
+    return Promise.resolve(password === hash);
   }
 }

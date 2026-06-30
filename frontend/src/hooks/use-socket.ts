@@ -6,20 +6,20 @@
  * Provides Socket.IO connection management.
  * Placeholder - will be implemented with Socket.IO client.
  */
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 
 export function useSocket(namespace?: string) {
-  const socketRef = useRef<unknown>(null);
+  const [socket] = useState<unknown>(null);
 
   useEffect(() => {
     // Socket.IO connection will be established here
-    // const socket = io(process.env.NEXT_PUBLIC_WS_URL + (namespace || ''));
-    // socketRef.current = socket;
-    // return () => { socket.disconnect(); };
+    // const socketInstance = io(process.env.NEXT_PUBLIC_WS_URL + (namespace || ''));
+    // setSocket(socketInstance);
+    // return () => { socketInstance.disconnect(); };
   }, [namespace]);
 
   return {
-    socket: socketRef.current,
+    socket,
     isConnected: false,
   };
 }
