@@ -1,0 +1,11 @@
+/**
+ * shadcn/ui components directory
+ *
+ * Components added via `npx shadcn@latest add <component>` will be placed here.
+ * Each component is fully customizable since the code is owned by the project.
+ *
+ * Example:
+ *   npx shadcn@latest add button
+ *   npx shadcn@latest add dialog
+ *   npx shadcn@latest add dropdown-menu
+ */

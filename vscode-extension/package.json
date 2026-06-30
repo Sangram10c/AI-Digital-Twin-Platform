@@ -1,0 +1,37 @@
+{
+  "name": "ai-digital-twin-vscode",
+  "displayName": "AI Digital Twin",
+  "description": "AI Digital Twin Platform - VS Code Extension",
+  "version": "0.0.1",
+  "publisher": "ai-digital-twin",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ai-digital-twin.helloWorld",
+        "title": "AI Digital Twin: Hello World"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.95.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "eslint": "^9.16.0"
+  }
+}

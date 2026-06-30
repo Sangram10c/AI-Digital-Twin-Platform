@@ -1,0 +1,26 @@
+# ========================================
+# CODEOWNERS - AI Digital Twin Platform
+# ========================================
+# These owners will be requested for review
+# when someone opens a pull request.
+# ========================================
+
+# Default owners for everything in the repo
+*                     @team-lead
+
+# Frontend
+/frontend/            @frontend-team
+
+# Backend
+/backend/             @backend-team
+
+# Infrastructure & DevOps
+/docker/              @devops-team
+/docker-compose.yml   @devops-team
+/.github/             @devops-team
+
+# Documentation
+/docs/                @team-lead
+
+# Database
+/backend/prisma/      @backend-team @team-lead

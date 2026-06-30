@@ -1,0 +1,1 @@
+// Workspaces feature components placeholder

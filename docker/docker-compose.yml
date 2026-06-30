@@ -1,0 +1,109 @@
+# ========================================
+# Docker Compose - Development
+# ========================================
+# Usage: docker-compose up -d
+# ========================================
+
+services:
+  # ----------------------------------
+  # PostgreSQL with pgvector
+  # ----------------------------------
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: adt-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: ${DATABASE_NAME:-ai_digital_twin}
+    ports:
+      - '${DATABASE_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - adt-network
+
+  # ----------------------------------
+  # Redis
+  # ----------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: adt-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - adt-network
+
+  # ----------------------------------
+  # Backend (NestJS)
+  # ----------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    container_name: adt-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${DATABASE_USER:-postgres}:${DATABASE_PASSWORD:-postgres}@postgres:5432/${DATABASE_NAME:-ai_digital_twin}?schema=public
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      BACKEND_PORT: 4000
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - adt-network
+
+  # ----------------------------------
+  # Frontend (Next.js)
+  # ----------------------------------
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+    container_name: adt-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:4000/api
+      NEXT_PUBLIC_WS_URL: http://backend:4000
+    ports:
+      - '3000:3000'
+    depends_on:
+      - backend
+    networks:
+      - adt-network
+
+# ========================================
+# Volumes
+# ========================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ========================================
+# Networks
+# ========================================
+networks:
+  adt-network:
+    driver: bridge
