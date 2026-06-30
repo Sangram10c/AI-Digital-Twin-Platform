@@ -1,5 +1,8 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
+    "ignoreDeprecations": "6.0",
+    "types": ["jest", "node"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "resolvePackageJsonExports": true,
@@ -24,5 +27,6 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "include": ["src/**/*"]
 }
