@@ -1,5 +1,0 @@
-{
-  "frontend/**/*.{ts,tsx}": "cd frontend && npx eslint --fix",
-  "backend/**/*.ts": "cd backend && npx eslint --fix",
-  "*.{json,md,yml,yaml}": "prettier --write"
-}
