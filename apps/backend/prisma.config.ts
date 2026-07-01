@@ -2,7 +2,8 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 
 // Load .env from the monorepo root
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+const envPath = path.resolve(__dirname, '../../.env');
+dotenv.config({ path: envPath });
 
 import { defineConfig, env } from 'prisma/config';
 
