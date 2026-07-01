@@ -30,6 +30,10 @@ jobs:
       - name: Install all dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: npx prisma generate
+
       - name: Lint frontend
         working-directory: apps/frontend
         run: npm run lint
@@ -56,6 +60,10 @@ jobs:
 
       - name: Install all dependencies
         run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: npx prisma generate
 
       - name: Type check frontend
         working-directory: apps/frontend

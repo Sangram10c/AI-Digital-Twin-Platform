@@ -5,11 +5,11 @@ import * as dotenv from 'dotenv';
 const envPath = path.resolve(__dirname, '../../.env');
 dotenv.config({ path: envPath });
 
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   datasource: {
-    url: env('DATABASE_URL'),
+    url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/ai_digital_twin?schema=public',
   },
 });
