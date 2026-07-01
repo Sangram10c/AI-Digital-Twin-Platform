@@ -43,7 +43,7 @@
     "db:push": "npm run --prefix apps/backend db:push",
     "db:seed": "npm run --prefix apps/backend db:seed",
     "db:studio": "npm run --prefix apps/backend db:studio",
-    "prepare": "husky",
+    "prepare": "npx husky || true",
     "precommit": "lint-staged",
     "prepush": "node scripts/utilities/pre-push.js",
     "setup": "bash scripts/setup/setup.sh"
