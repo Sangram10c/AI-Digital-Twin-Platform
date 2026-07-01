@@ -4,8 +4,9 @@ on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'backend/**'
-      - 'frontend/**'
+      - 'apps/backend/**'
+      - 'apps/frontend/**'
+      - 'packages/**'
 
 env:
   NODE_VERSION: '22'
@@ -16,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [frontend, backend]
+        project: [apps/frontend, apps/backend]
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -52,13 +53,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
-        working-directory: ${{ matrix.project }}
+      - name: Install all dependencies
         run: npm ci
 
       - name: Generate Prisma client
-        if: matrix.project == 'backend'
-        working-directory: backend
+        if: matrix.project == 'apps/backend'
+        working-directory: apps/backend
         run: npx prisma generate
 
       - name: Run tests

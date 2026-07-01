@@ -27,23 +27,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install root dependencies
+      - name: Install all dependencies
         run: npm ci
 
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: npx prisma generate
 
       - name: Lint frontend
-        working-directory: frontend
+        working-directory: apps/frontend
         run: npm run lint
 
       - name: Lint backend
-        working-directory: backend
+        working-directory: apps/backend
         run: npm run lint
 
       - name: Check formatting
@@ -62,20 +58,19 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install frontend dependencies
-        working-directory: frontend
+      - name: Install all dependencies
         run: npm ci
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
+      - name: Generate Prisma client
+        working-directory: apps/backend
+        run: npx prisma generate
 
       - name: Type check frontend
-        working-directory: frontend
+        working-directory: apps/frontend
         run: npx tsc --noEmit
 
       - name: Type check backend
-        working-directory: backend
+        working-directory: apps/backend
         run: npx tsc --noEmit
 
   test:
@@ -117,16 +112,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install backend dependencies
-        working-directory: backend
+      - name: Install all dependencies
         run: npm ci
 
       - name: Generate Prisma client
-        working-directory: backend
+        working-directory: apps/backend
         run: npx prisma generate
 
       - name: Run backend tests
-        working-directory: backend
+        working-directory: apps/backend
         run: npm run test -- --coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ai_digital_twin_test?schema=public
@@ -137,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-backend
-          path: backend/coverage/
+          path: apps/backend/coverage/
 
   build:
     name: Build
@@ -145,7 +139,7 @@ jobs:
     needs: [lint, type-check]
     strategy:
       matrix:
-        project: [frontend, backend]
+        project: [apps/frontend, apps/backend]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -156,13 +150,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
-        working-directory: ${{ matrix.project }}
+      - name: Install all dependencies
         run: npm ci
 
       - name: Generate Prisma client
-        if: matrix.project == 'backend'
-        working-directory: backend
+        if: matrix.project == 'apps/backend'
+        working-directory: apps/backend
         run: npx prisma generate
 
       - name: Build
@@ -184,16 +177,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install frontend dependencies
-        working-directory: frontend
+      - name: Install all dependencies
         run: npm ci
 
       - name: Install Playwright
-        working-directory: frontend
+        working-directory: apps/frontend
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
-        working-directory: frontend
+        working-directory: apps/frontend
         run: npx playwright test
         env:
           NEXT_PUBLIC_API_URL: http://localhost:4000/api
@@ -203,4 +195,4 @@ jobs:
         if: always()
         with:
           name: playwright-report
-          path: frontend/playwright-report/
+          path: apps/frontend/playwright-report/

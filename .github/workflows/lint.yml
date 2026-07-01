@@ -4,8 +4,9 @@ on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'frontend/**'
-      - 'backend/**'
+      - 'apps/frontend/**'
+      - 'apps/backend/**'
+      - 'packages/**'
       - '*.json'
       - '*.yml'
 
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [frontend, backend]
+        project: [apps/frontend, apps/backend]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -29,9 +30,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install dependencies
-        working-directory: ${{ matrix.project }}
+      - name: Install all dependencies
         run: npm ci
+
+      - name: Generate Prisma client
+        if: matrix.project == 'apps/backend'
+        working-directory: apps/backend
+        run: npx prisma generate
 
       - name: Run ESLint
         working-directory: ${{ matrix.project }}
