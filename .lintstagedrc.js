@@ -27,7 +27,9 @@ module.exports = {
 
   // Other configurations, documentation, stylesheet files
   '**/*.{js,jsx,json,md,css,scss,html,yaml,yml}': (filenames) => {
-    const escapedFiles = filenames.map((f) => `"${f}"`).join(' ');
+    const filtered = filenames.filter((f) => !f.endsWith('package-lock.json'));
+    if (filtered.length === 0) return [];
+    const escapedFiles = filtered.map((f) => `"${f}"`).join(' ');
     return [`npx prettier --write ${escapedFiles}`];
   },
 };
