@@ -29,8 +29,8 @@
   "typescript.preferences.quoteStyle": "single",
 
   "eslint.workingDirectories": [
-    { "directory": "frontend", "changeProcessCWD": true },
-    { "directory": "backend", "changeProcessCWD": true }
+    { "directory": "apps/frontend", "changeProcessCWD": true },
+    { "directory": "apps/backend", "changeProcessCWD": true }
   ],
 
   "tailwindCSS.experimental.classRegex": [

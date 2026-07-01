@@ -11,7 +11,7 @@ updates:
       prefix: 'chore(deps):'
 
   - package-ecosystem: 'npm'
-    directory: '/frontend'
+    directory: '/apps/frontend'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 10
@@ -22,7 +22,7 @@ updates:
       prefix: 'chore(deps-frontend):'
 
   - package-ecosystem: 'npm'
-    directory: '/backend'
+    directory: '/apps/backend'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 10
@@ -33,7 +33,7 @@ updates:
       prefix: 'chore(deps-backend):'
 
   - package-ecosystem: 'docker'
-    directory: '/docker'
+    directory: '/infra/docker'
     schedule:
       interval: 'monthly'
     labels:

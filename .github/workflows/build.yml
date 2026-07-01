@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [frontend, backend]
+        project: [apps/frontend, apps/backend]
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -27,12 +27,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        working-directory: ${{ matrix.project }}
         run: npm ci
 
       - name: Generate Prisma client
-        if: matrix.project == 'backend'
-        working-directory: backend
+        if: matrix.project == 'apps/backend'
+        working-directory: apps/backend
         run: npx prisma generate
 
       - name: Build
@@ -57,9 +56,9 @@ jobs:
       matrix:
         include:
           - service: frontend
-            dockerfile: docker/frontend.Dockerfile
+            dockerfile: infra/docker/frontend.Dockerfile
           - service: backend
-            dockerfile: docker/backend.Dockerfile
+            dockerfile: infra/docker/backend.Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v7

@@ -13,7 +13,7 @@
       "label": "Dev: Frontend",
       "type": "shell",
       "command": "npm run dev",
-      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "options": { "cwd": "${workspaceFolder}/apps/frontend" },
       "isBackground": true,
       "problemMatcher": []
     },
@@ -21,7 +21,7 @@
       "label": "Dev: Backend",
       "type": "shell",
       "command": "npm run start:dev",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "options": { "cwd": "${workspaceFolder}/apps/backend" },
       "isBackground": true,
       "problemMatcher": []
     },
@@ -29,7 +29,7 @@
       "label": "Build: Frontend",
       "type": "shell",
       "command": "npm run build",
-      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "options": { "cwd": "${workspaceFolder}/apps/frontend" },
       "group": "build",
       "problemMatcher": []
     },
@@ -37,7 +37,7 @@
       "label": "Build: Backend",
       "type": "shell",
       "command": "npm run build",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "options": { "cwd": "${workspaceFolder}/apps/backend" },
       "group": "build",
       "problemMatcher": []
     },
@@ -45,7 +45,7 @@
       "label": "Test: Frontend",
       "type": "shell",
       "command": "npm run test",
-      "options": { "cwd": "${workspaceFolder}/frontend" },
+      "options": { "cwd": "${workspaceFolder}/apps/frontend" },
       "group": "test",
       "problemMatcher": []
     },
@@ -53,7 +53,7 @@
       "label": "Test: Backend",
       "type": "shell",
       "command": "npm run test",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "options": { "cwd": "${workspaceFolder}/apps/backend" },
       "group": "test",
       "problemMatcher": []
     },
@@ -79,14 +79,14 @@
       "label": "DB: Generate Prisma",
       "type": "shell",
       "command": "npx prisma generate",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "options": { "cwd": "${workspaceFolder}/apps/backend" },
       "problemMatcher": []
     },
     {
       "label": "DB: Migrate",
       "type": "shell",
       "command": "npx prisma migrate dev",
-      "options": { "cwd": "${workspaceFolder}/backend" },
+      "options": { "cwd": "${workspaceFolder}/apps/backend" },
       "problemMatcher": []
     }
   ]
