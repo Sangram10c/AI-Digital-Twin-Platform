@@ -16,6 +16,11 @@ jobs:
     strategy:
       matrix:
         project: [apps/frontend, apps/backend]
+        include:
+          - project: apps/frontend
+            name: frontend
+          - project: apps/backend
+            name: backend
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -41,7 +46,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.project }}-build
+          name: ${{ matrix.name }}-build
           path: |
             ${{ matrix.project }}/dist/
             ${{ matrix.project }}/.next/

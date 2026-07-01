@@ -15,12 +15,9 @@ import * as vscode from 'vscode';
 export function activate(context: vscode.ExtensionContext): void {
   console.log('AI Digital Twin extension is now active');
 
-  const helloWorldCommand = vscode.commands.registerCommand(
-    'ai-digital-twin.helloWorld',
-    () => {
-      vscode.window.showInformationMessage('Hello from AI Digital Twin!');
-    },
-  );
+  const helloWorldCommand = vscode.commands.registerCommand('ai-digital-twin.helloWorld', () => {
+    vscode.window.showInformationMessage('Hello from AI Digital Twin!');
+  });
 
   context.subscriptions.push(helloWorldCommand);
 }
