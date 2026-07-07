@@ -58,13 +58,17 @@ export async function updateCommand(options: CommandOptions = {}): Promise<void>
       }
       const paddedNum = String(currentDoc.number).padStart(2, '0');
       await statusParser.updateCurrentDocument(currentDoc.number, currentDoc.name);
-      await statusParser.updateCurrentTask(`${paddedNum}-${currentDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+      await statusParser.updateCurrentTask(
+        `${paddedNum}-${currentDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+      );
     }
 
     const nextDoc = taskDetector.detectNextDocument(state.documents);
     if (nextDoc) {
       const paddedNum = String(nextDoc.number).padStart(2, '0');
-      await statusParser.updateNextTask(`${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+      await statusParser.updateNextTask(
+        `${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+      );
     }
 
     // Update milestones

@@ -56,7 +56,9 @@ export async function completeCommand(): Promise<void> {
 
       await statusParser.updateCurrentDocument(nextDoc.number, nextDoc.name);
       const paddedNum = String(nextDoc.number).padStart(2, '0');
-      await statusParser.updateCurrentTask(`${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+      await statusParser.updateCurrentTask(
+        `${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+      );
 
       // Find what comes after next
       const nextNextDoc = state.documents.find(
@@ -64,7 +66,9 @@ export async function completeCommand(): Promise<void> {
       );
       if (nextNextDoc) {
         const nextPadded = String(nextNextDoc.number).padStart(2, '0');
-        await statusParser.updateNextTask(`${nextPadded}-${nextNextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+        await statusParser.updateNextTask(
+          `${nextPadded}-${nextNextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+        );
       }
     }
 
@@ -102,7 +106,9 @@ export async function completeCommand(): Promise<void> {
     logger.blank();
 
     const overallProgress = progressCalculator.calculateOverallProgress(state.documents);
-    console.log(`  ${chalk.hex(CLI_COLORS.muted)('Progress:')} ${createProgressBar(overallProgress, 30)}`);
+    console.log(
+      `  ${chalk.hex(CLI_COLORS.muted)('Progress:')} ${createProgressBar(overallProgress, 30)}`,
+    );
     logger.blank();
   } catch (error: unknown) {
     spinner.fail('Failed to complete document');

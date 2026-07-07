@@ -3,12 +3,7 @@
 // ============================================
 
 import { REPORT_FILE_PATH } from '../constants/index.js';
-import type {
-  ProjectState,
-  GitInfo,
-  ValidationResult,
-  ProjectReport,
-} from '../types/index.js';
+import type { ProjectState, GitInfo, ValidationResult, ProjectReport } from '../types/index.js';
 import { writeFileContent } from '../utils/file-utils.js';
 import { formatDate } from '../utils/format-utils.js';
 import { generateReportMarkdown } from '../templates/report.template.js';
@@ -50,10 +45,7 @@ export class ReportGeneratorService {
   /**
    * Generate recommendations based on project state and validation results.
    */
-  private generateRecommendations(
-    state: ProjectState,
-    validations: ValidationResult[],
-  ): string[] {
+  private generateRecommendations(state: ProjectState, validations: ValidationResult[]): string[] {
     const recommendations: string[] = [];
 
     // Check for failed validations

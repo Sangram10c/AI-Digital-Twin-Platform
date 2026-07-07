@@ -48,12 +48,7 @@ export async function reportCommand(): Promise<void> {
     const validations = await validator.validateAll(state.documents);
 
     spinner.text = 'Generating report...';
-    const report = reportGenerator.generateReport(
-      state,
-      git,
-      validations,
-      overallProgress,
-    );
+    const report = reportGenerator.generateReport(state, git, validations, overallProgress);
 
     const outputPath = await reportGenerator.writeReport(report);
 
@@ -62,7 +57,10 @@ export async function reportCommand(): Promise<void> {
     logger.blank();
     logger.label('Output', outputPath);
     logger.label('Progress', `${overallProgress}%`);
-    logger.label('Validations', `${validations.filter((v) => v.passed).length}/${validations.length} passed`);
+    logger.label(
+      'Validations',
+      `${validations.filter((v) => v.passed).length}/${validations.length} passed`,
+    );
     logger.blank();
   } catch (error: unknown) {
     spinner.fail('Failed to generate report');

@@ -85,11 +85,7 @@ export class GitService {
   async getModifiedDocFiles(): Promise<string[]> {
     try {
       const status = await this.git.status();
-      const allModified = [
-        ...status.modified,
-        ...status.not_added,
-        ...status.created,
-      ];
+      const allModified = [...status.modified, ...status.not_added, ...status.created];
       return allModified.filter((f) => f.startsWith('docs/'));
     } catch {
       return [];
@@ -105,7 +101,9 @@ export class GitService {
       const files = new Set<string>();
 
       for (const commit of log.all) {
-        const diff = await this.git.diff(['--name-only', `${commit.hash}~1`, commit.hash]).catch(() => '');
+        const diff = await this.git
+          .diff(['--name-only', `${commit.hash}~1`, commit.hash])
+          .catch(() => '');
         const commitFiles = diff.split('\n').filter(Boolean);
         for (const file of commitFiles) {
           files.add(file);

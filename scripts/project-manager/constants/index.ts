@@ -91,7 +91,7 @@ export const PHASE_DEFINITIONS: readonly PhaseDefinition[] = [
   {
     name: 'Backend',
     documentRange: [16, 17, 18, 19],
-    weight: 0.20,
+    weight: 0.2,
   },
   {
     name: 'Frontend',
@@ -101,7 +101,7 @@ export const PHASE_DEFINITIONS: readonly PhaseDefinition[] = [
   {
     name: 'Testing',
     documentRange: [20],
-    weight: 0.10,
+    weight: 0.1,
   },
   {
     name: 'Deployment',

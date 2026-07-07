@@ -3,11 +3,7 @@
 // ============================================
 
 import chalk from 'chalk';
-import {
-  CLI_COLORS,
-  PROGRESS_BAR,
-  TIMELINE_ICONS,
-} from '../constants/index.js';
+import { CLI_COLORS, PROGRESS_BAR, TIMELINE_ICONS } from '../constants/index.js';
 import type { DocumentStatus } from '../types/index.js';
 
 /**
@@ -17,7 +13,10 @@ import type { DocumentStatus } from '../types/index.js';
  * @param width - Total bar width in characters
  * @returns Formatted progress bar string
  */
-export function createProgressBar(percentage: number, width: number = PROGRESS_BAR.defaultWidth): string {
+export function createProgressBar(
+  percentage: number,
+  width: number = PROGRESS_BAR.defaultWidth,
+): string {
   const clamped = Math.max(0, Math.min(100, percentage));
   const filled = Math.round((clamped / 100) * width);
   const empty = width - filled;
@@ -36,7 +35,8 @@ export function createHeaderBox(title: string, subtitle?: string): string {
   const width = maxLen + 4;
   const border = chalk.hex(CLI_COLORS.border)('═'.repeat(width));
   const topBorder = chalk.hex(CLI_COLORS.border)('╔') + border + chalk.hex(CLI_COLORS.border)('╗');
-  const bottomBorder = chalk.hex(CLI_COLORS.border)('╚') + border + chalk.hex(CLI_COLORS.border)('╝');
+  const bottomBorder =
+    chalk.hex(CLI_COLORS.border)('╚') + border + chalk.hex(CLI_COLORS.border)('╝');
 
   const padTitle = title.padStart(Math.floor((width + title.length) / 2)).padEnd(width);
   const titleLine =

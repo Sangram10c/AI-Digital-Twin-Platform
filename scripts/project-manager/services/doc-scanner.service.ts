@@ -33,41 +33,41 @@ export function matchDocumentNumber(filename: string): number | null {
 
   // Exact manual alias map for the codebase's specific document filenames
   const aliases: Record<string, number> = {
-    'projectoverview': 1,
-    'userjourney': 2,
-    'userjourneys': 2,
-    'functionalrequirement': 3,
-    'functionalrequirements': 3,
-    'nonfunctionalrequirement': 4,
-    'nonfunctionalrequirements': 4,
-    'systemarchitecture': 5,
-    'techstack': 6,
-    'technologystack': 6,
-    'databaseerd': 7,
-    'erd': 7,
-    'databasedesign': 8,
-    'apidesign': 9,
-    'authentication': 10,
-    'authenticationdesign': 10,
-    'githubintegration': 11,
-    'airagarchitecture': 12,
-    'ragpipeline': 12,
-    'searchenginedesign': 13,
-    'backgroundjobarchitecture': 14,
-    'security': 15,
-    'securityarchitecture': 15,
-    'frontendarchitecture': 16,
-    'backendarchitecture': 17,
-    'folderstructure': 18,
-    'codingstandards': 19,
-    'testingstrategy': 20,
-    'deployment': 21,
-    'deploymentarchitecture': 21,
-    'developmentroadmap': 22,
-    'featureroadmap': 22,
-    'futureenhancement': 23,
-    'futureenhancements': 23,
-    'glossary': 24,
+    projectoverview: 1,
+    userjourney: 2,
+    userjourneys: 2,
+    functionalrequirement: 3,
+    functionalrequirements: 3,
+    nonfunctionalrequirement: 4,
+    nonfunctionalrequirements: 4,
+    systemarchitecture: 5,
+    techstack: 6,
+    technologystack: 6,
+    databaseerd: 7,
+    erd: 7,
+    databasedesign: 8,
+    apidesign: 9,
+    authentication: 10,
+    authenticationdesign: 10,
+    githubintegration: 11,
+    airagarchitecture: 12,
+    ragpipeline: 12,
+    searchenginedesign: 13,
+    backgroundjobarchitecture: 14,
+    security: 15,
+    securityarchitecture: 15,
+    frontendarchitecture: 16,
+    backendarchitecture: 17,
+    folderstructure: 18,
+    codingstandards: 19,
+    testingstrategy: 20,
+    deployment: 21,
+    deploymentarchitecture: 21,
+    developmentroadmap: 22,
+    featureroadmap: 22,
+    futureenhancement: 23,
+    futureenhancements: 23,
+    glossary: 24,
   };
 
   if (aliases[fileSlug]) {
@@ -162,16 +162,24 @@ export class DocScannerService {
 
     return documents.map((doc) => {
       const scannedDoc = scannedByNumber.get(doc.number);
-      
+
       // Auto-detect status based on scanned file metadata/frontmatter
       let detectedStatus = doc.status;
       if (scannedDoc) {
         const fmStatus = scannedDoc.frontmatter['status'] as string | undefined;
         if (fmStatus) {
           const cleanFmStatus = fmStatus.toLowerCase().trim();
-          if (cleanFmStatus === 'completed' || cleanFmStatus === 'complete' || cleanFmStatus === 'done') {
+          if (
+            cleanFmStatus === 'completed' ||
+            cleanFmStatus === 'complete' ||
+            cleanFmStatus === 'done'
+          ) {
             detectedStatus = 'completed';
-          } else if (cleanFmStatus === 'in-progress' || cleanFmStatus === 'draft' || cleanFmStatus === 'started') {
+          } else if (
+            cleanFmStatus === 'in-progress' ||
+            cleanFmStatus === 'draft' ||
+            cleanFmStatus === 'started'
+          ) {
             detectedStatus = 'in-progress';
           } else if (cleanFmStatus === 'not-started') {
             detectedStatus = 'not-started';

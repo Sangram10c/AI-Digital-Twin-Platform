@@ -161,7 +161,11 @@ export function replaceSection(
 
   const updatedLines = [...lines];
   // Remove old content (keep heading at startLine)
-  updatedLines.splice(section.startLine + 1, section.endLine - section.startLine - 1, ...newContent);
+  updatedLines.splice(
+    section.startLine + 1,
+    section.endLine - section.startLine - 1,
+    ...newContent,
+  );
   return updatedLines;
 }
 

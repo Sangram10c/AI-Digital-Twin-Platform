@@ -178,13 +178,15 @@ export class ValidatorService {
   private async checkAgentFile(): Promise<ValidationResult[]> {
     const filePath = path.join(PROJECT_ROOT, 'AGENT.md');
     const exists = await fileExists(filePath);
-    return [{
-      category: 'Agent Config',
-      check: 'AGENT.md',
-      passed: exists,
-      message: exists ? 'AGENT.md found' : 'AGENT.md is missing — required for AI assistants',
-      severity: 'warning',
-    }];
+    return [
+      {
+        category: 'Agent Config',
+        check: 'AGENT.md',
+        passed: exists,
+        message: exists ? 'AGENT.md found' : 'AGENT.md is missing — required for AI assistants',
+        severity: 'warning',
+      },
+    ];
   }
 
   /**
@@ -195,25 +197,29 @@ export class ValidatorService {
     const content = await readFileContent(filePath);
 
     if (content === null) {
-      return [{
-        category: 'Documentation',
-        check: 'README.md content',
-        passed: false,
-        message: 'README.md is missing or empty',
-        severity: 'error',
-      }];
+      return [
+        {
+          category: 'Documentation',
+          check: 'README.md content',
+          passed: false,
+          message: 'README.md is missing or empty',
+          severity: 'error',
+        },
+      ];
     }
 
     const hasMinContent = content.length > 500;
-    return [{
-      category: 'Documentation',
-      check: 'README.md content',
-      passed: hasMinContent,
-      message: hasMinContent
-        ? 'README.md has substantive content'
-        : 'README.md exists but appears minimal — consider expanding it',
-      severity: 'info',
-    }];
+    return [
+      {
+        category: 'Documentation',
+        check: 'README.md content',
+        passed: hasMinContent,
+        message: hasMinContent
+          ? 'README.md has substantive content'
+          : 'README.md exists but appears minimal — consider expanding it',
+        severity: 'info',
+      },
+    ];
   }
 
   /**

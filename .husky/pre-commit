@@ -1,4 +1,5 @@
 npx tsx scripts/project-manager/index.ts validate --silent
 npx tsx scripts/project-manager/index.ts update --silent
 npx tsx scripts/project-manager/index.ts report
+git add CURRENT_STATUS.md PROJECT_REPORT.md
 npx lint-staged

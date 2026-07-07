@@ -69,10 +69,21 @@ export async function helpCommand(): Promise<void> {
 
   const table = new Table({
     chars: {
-      top: '─', 'top-mid': '┬', 'top-left': '  ┌', 'top-right': '┐',
-      bottom: '─', 'bottom-mid': '┴', 'bottom-left': '  └', 'bottom-right': '┘',
-      left: '  │', 'left-mid': '  ├', mid: '─', 'mid-mid': '┼',
-      right: '│', 'right-mid': '┤', middle: '│',
+      top: '─',
+      'top-mid': '┬',
+      'top-left': '  ┌',
+      'top-right': '┐',
+      bottom: '─',
+      'bottom-mid': '┴',
+      'bottom-left': '  └',
+      'bottom-right': '┘',
+      left: '  │',
+      'left-mid': '  ├',
+      mid: '─',
+      'mid-mid': '┼',
+      right: '│',
+      'right-mid': '┤',
+      middle: '│',
     },
     head: [
       chalk.white.bold('Command'),
@@ -98,15 +109,21 @@ export async function helpCommand(): Promise<void> {
   // Usage examples
   console.log(chalk.hex(CLI_COLORS.accent).bold('  💡 Quick Start'));
   console.log();
-  console.log(`  ${chalk.hex(CLI_COLORS.muted)('1.')} ${chalk.hex(CLI_COLORS.info)('npm run project:status')}     ${chalk.hex(CLI_COLORS.muted)('— See where you are')}`);
-  console.log(`  ${chalk.hex(CLI_COLORS.muted)('2.')} ${chalk.hex(CLI_COLORS.info)('npm run project:complete')}   ${chalk.hex(CLI_COLORS.muted)('— Finish current doc')}`);
-  console.log(`  ${chalk.hex(CLI_COLORS.muted)('3.')} ${chalk.hex(CLI_COLORS.info)('npm run project:report')}     ${chalk.hex(CLI_COLORS.muted)('— Generate a report')}`);
+  console.log(
+    `  ${chalk.hex(CLI_COLORS.muted)('1.')} ${chalk.hex(CLI_COLORS.info)('npm run project:status')}     ${chalk.hex(CLI_COLORS.muted)('— See where you are')}`,
+  );
+  console.log(
+    `  ${chalk.hex(CLI_COLORS.muted)('2.')} ${chalk.hex(CLI_COLORS.info)('npm run project:complete')}   ${chalk.hex(CLI_COLORS.muted)('— Finish current doc')}`,
+  );
+  console.log(
+    `  ${chalk.hex(CLI_COLORS.muted)('3.')} ${chalk.hex(CLI_COLORS.info)('npm run project:report')}     ${chalk.hex(CLI_COLORS.muted)('— Generate a report')}`,
+  );
   console.log();
 
   console.log(createDivider(55));
   console.log(
     chalk.hex(CLI_COLORS.muted)('  Built for ') +
-    chalk.hex(CLI_COLORS.header).bold('AI Engineering Intelligence Platform'),
+      chalk.hex(CLI_COLORS.header).bold('AI Engineering Intelligence Platform'),
   );
   console.log();
 }

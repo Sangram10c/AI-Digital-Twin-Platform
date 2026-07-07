@@ -56,7 +56,11 @@ export class DecisionTrackerService {
   /**
    * Create a markdown block for a new decision.
    */
-  createDecisionMarkdown(number: number, description: string, status: 'approved' | 'pending'): string {
+  createDecisionMarkdown(
+    number: number,
+    description: string,
+    status: 'approved' | 'pending',
+  ): string {
     const statusText = status === 'approved' ? '✅ Approved' : '⏳ Pending';
     return [
       '',

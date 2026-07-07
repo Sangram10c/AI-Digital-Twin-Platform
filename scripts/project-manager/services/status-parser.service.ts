@@ -30,6 +30,8 @@ export class StatusParserService {
   private content: string | null = null;
   private lines: string[] = [];
 
+  private lineEnding = '\n';
+
   /**
    * Load the status file content into memory.
    */
@@ -38,10 +40,12 @@ export class StatusParserService {
     if (this.content === null) {
       throw new Error(
         `CURRENT_STATUS.md not found at ${STATUS_FILE_PATH}. ` +
-        'Ensure you are running from the project root.',
+          'Ensure you are running from the project root.',
       );
     }
-    this.lines = this.content.split('\n');
+    // Detect line endings
+    this.lineEnding = this.content.includes('\r\n') ? '\r\n' : '\n';
+    this.lines = this.content.split(/\r?\n/);
   }
 
   /**
@@ -75,10 +79,7 @@ export class StatusParserService {
     for (const line of this.lines) {
       const trimmed = line.trim();
       if (trimmed.startsWith('# ')) {
-        return trimmed
-          .replace(/^#\s+/, '')
-          .replace(/🚀\s*/, '')
-          .trim();
+        return trimmed.replace(/^#\s+/, '').replace(/🚀\s*/, '').trim();
       }
     }
     return 'AI Engineering Intelligence Platform';
@@ -111,7 +112,10 @@ export class StatusParserService {
     for (const line of section.content) {
       const trimmed = line.trim();
       if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
-        return trimmed.replace(/\*\*/g, '').replace(/^\d+\s*[-–—]\s*/, '').trim();
+        return trimmed
+          .replace(/\*\*/g, '')
+          .replace(/^\d+\s*[-–—]\s*/, '')
+          .trim();
       }
     }
     return 'Unknown';
@@ -282,8 +286,15 @@ export class StatusParserService {
         continue;
       }
 
-      if (trimmed && !trimmed.startsWith('Status') && !trimmed.startsWith('---') &&
-          !trimmed.startsWith('##') && !trimmed.startsWith('✅') && currentNum > 0 && !currentDesc) {
+      if (
+        trimmed &&
+        !trimmed.startsWith('Status') &&
+        !trimmed.startsWith('---') &&
+        !trimmed.startsWith('##') &&
+        !trimmed.startsWith('✅') &&
+        currentNum > 0 &&
+        !currentDesc
+      ) {
         currentDesc = trimmed;
         continue;
       }
@@ -395,7 +406,13 @@ export class StatusParserService {
 
     for (let i = sectionIdx + 1; i < Math.min(sectionIdx + 10, this.lines.length); i++) {
       const trimmed = this.lines[i]!.trim();
-      if (trimmed.match(/^\d{2}-/) || (trimmed && !trimmed.startsWith('Complete') && !trimmed.startsWith('---') && !trimmed.startsWith('#'))) {
+      if (
+        trimmed.match(/^\d{2}-/) ||
+        (trimmed &&
+          !trimmed.startsWith('Complete') &&
+          !trimmed.startsWith('---') &&
+          !trimmed.startsWith('#'))
+      ) {
         this.lines[i] = taskText;
         break;
       }
@@ -473,6 +490,7 @@ export class StatusParserService {
     if (this.content === null) {
       throw new Error('No content loaded. Call load() first.');
     }
+    this.content = this.lines.join(this.lineEnding);
     await writeFileContent(STATUS_FILE_PATH, this.content, true);
   }
 

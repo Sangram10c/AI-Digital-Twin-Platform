@@ -53,10 +53,14 @@ export function generateReportMarkdown(report: ProjectReport): string {
   sections.push('| # | Document | Status |');
   sections.push('|---|----------|--------|');
   for (const doc of report.state.documents) {
-    const statusIcon = doc.status === 'completed' ? '✅' :
-      doc.status === 'in-progress' ? '🟡' : '⬜';
-    const statusLabel = doc.status === 'completed' ? 'Completed' :
-      doc.status === 'in-progress' ? 'In Progress' : 'Not Started';
+    const statusIcon =
+      doc.status === 'completed' ? '✅' : doc.status === 'in-progress' ? '🟡' : '⬜';
+    const statusLabel =
+      doc.status === 'completed'
+        ? 'Completed'
+        : doc.status === 'in-progress'
+          ? 'In Progress'
+          : 'Not Started';
     const paddedNum = String(doc.number).padStart(2, '0');
     sections.push(`| ${paddedNum} | ${doc.name} | ${statusIcon} ${statusLabel} |`);
   }
@@ -104,8 +108,7 @@ export function generateReportMarkdown(report: ProjectReport): string {
     sections.push('| Category | Check | Severity | Message |');
     sections.push('|----------|-------|----------|---------|');
     for (const v of report.validations.filter((v) => !v.passed)) {
-      const sevIcon = v.severity === 'error' ? '🔴' :
-        v.severity === 'warning' ? '🟡' : '🔵';
+      const sevIcon = v.severity === 'error' ? '🔴' : v.severity === 'warning' ? '🟡' : '🔵';
       sections.push(`| ${v.category} | ${v.check} | ${sevIcon} ${v.severity} | ${v.message} |`);
     }
     sections.push('');

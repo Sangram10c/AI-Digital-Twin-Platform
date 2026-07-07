@@ -81,10 +81,7 @@ export async function getFileStats(filePath: string): Promise<fs.Stats | null> {
  * @param pattern - Glob pattern (default: all .md files)
  * @returns Array of absolute file paths
  */
-export async function scanDirectory(
-  dirPath: string,
-  pattern = '**/*.md',
-): Promise<string[]> {
+export async function scanDirectory(dirPath: string, pattern = '**/*.md'): Promise<string[]> {
   try {
     const exists = await fs.pathExists(dirPath);
     if (!exists) {

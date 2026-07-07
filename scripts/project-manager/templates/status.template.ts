@@ -38,9 +38,7 @@ export function renderDashboard(
   console.log(
     `  ${chalk.hex(CLI_COLORS.muted)('Document:')}      ${chalk.hex(CLI_COLORS.warning).bold(state.currentDocument)}`,
   );
-  console.log(
-    `  ${chalk.hex(CLI_COLORS.muted)('Status:')}        ${state.currentDocumentStatus}`,
-  );
+  console.log(`  ${chalk.hex(CLI_COLORS.muted)('Status:')}        ${state.currentDocumentStatus}`);
   console.log();
 
   // ── Progress Bars ──
@@ -49,10 +47,21 @@ export function renderDashboard(
 
   const progressTable = new Table({
     chars: {
-      top: '', 'top-mid': '', 'top-left': '', 'top-right': '',
-      bottom: '', 'bottom-mid': '', 'bottom-left': '', 'bottom-right': '',
-      left: '  ', 'left-mid': '', mid: '', 'mid-mid': '',
-      right: '', 'right-mid': '', middle: ' ',
+      top: '',
+      'top-mid': '',
+      'top-left': '',
+      'top-right': '',
+      bottom: '',
+      'bottom-mid': '',
+      'bottom-left': '',
+      'bottom-right': '',
+      left: '  ',
+      'left-mid': '',
+      mid: '',
+      'mid-mid': '',
+      right: '',
+      'right-mid': '',
+      middle: ' ',
     },
     style: { 'padding-left': 0, 'padding-right': 1 },
   });
@@ -106,9 +115,7 @@ export function renderDashboard(
       );
     }
     if (notStarted.length > 3) {
-      console.log(
-        `    ${chalk.hex(CLI_COLORS.muted)(`  ...and ${notStarted.length - 3} more`)}`,
-      );
+      console.log(`    ${chalk.hex(CLI_COLORS.muted)(`  ...and ${notStarted.length - 3} more`)}`);
     }
     console.log();
   }
@@ -160,10 +167,9 @@ export function renderDashboard(
   // ── Footer ──
   console.log(createDivider(55));
   console.log(
-    chalk.hex(CLI_COLORS.muted)(
-      '  Run ') +
-    chalk.hex(CLI_COLORS.info)('npm run project:help') +
-    chalk.hex(CLI_COLORS.muted)(' to see all commands'),
+    chalk.hex(CLI_COLORS.muted)('  Run ') +
+      chalk.hex(CLI_COLORS.info)('npm run project:help') +
+      chalk.hex(CLI_COLORS.muted)(' to see all commands'),
   );
   console.log();
 }

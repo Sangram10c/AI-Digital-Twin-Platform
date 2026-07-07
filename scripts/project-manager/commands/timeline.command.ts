@@ -9,11 +9,7 @@ import { DocScannerService } from '../services/doc-scanner.service.js';
 import { ProgressCalculatorService } from '../services/progress-calculator.service.js';
 import { CLI_COLORS, PHASE_DEFINITIONS, TIMELINE_ICONS } from '../constants/index.js';
 import { logger } from '../utils/logger.js';
-import {
-  createHeaderBox,
-  createDivider,
-  formatDocName,
-} from '../utils/format-utils.js';
+import { createHeaderBox, createDivider, formatDocName } from '../utils/format-utils.js';
 import type { DocumentInfo } from '../types/index.js';
 
 /**
@@ -48,7 +44,8 @@ export async function timelineCommand(): Promise<void> {
 
       if (phaseDocs.length === 0) continue;
 
-      const phaseProgress = progressCalculator.calculatePhaseProgress(state.documents)
+      const phaseProgress = progressCalculator
+        .calculatePhaseProgress(state.documents)
         .find((p) => p.name === phaseDef.name);
 
       const progressText = phaseProgress ? `${phaseProgress.percentage}%` : '0%';
@@ -65,9 +62,7 @@ export async function timelineCommand(): Promise<void> {
       console.log(
         `  ${chalk.hex(phaseColor).bold(`◆ ${phaseDef.name}`)} ${chalk.hex(CLI_COLORS.muted)(`(${progressText})`)}`,
       );
-      console.log(
-        `  ${chalk.hex(CLI_COLORS.border)('│')}`,
-      );
+      console.log(`  ${chalk.hex(CLI_COLORS.border)('│')}`);
 
       // Documents in this phase
       for (let i = 0; i < phaseDocs.length; i++) {
@@ -95,12 +90,10 @@ export async function timelineCommand(): Promise<void> {
 
     console.log(
       `  ${chalk.hex(CLI_COLORS.success)(`${TIMELINE_ICONS.completed} Completed: ${completed}`)}  ${chalk.hex(CLI_COLORS.muted)('|')}  ` +
-      `${chalk.hex(CLI_COLORS.warning)(`${TIMELINE_ICONS['in-progress']} In Progress: ${state.documents.filter((d) => d.status === 'in-progress').length}`)}  ${chalk.hex(CLI_COLORS.muted)('|')}  ` +
-      `${chalk.hex(CLI_COLORS.muted)(`${TIMELINE_ICONS['not-started']} Remaining: ${total - completed - state.documents.filter((d) => d.status === 'in-progress').length}`)}`,
+        `${chalk.hex(CLI_COLORS.warning)(`${TIMELINE_ICONS['in-progress']} In Progress: ${state.documents.filter((d) => d.status === 'in-progress').length}`)}  ${chalk.hex(CLI_COLORS.muted)('|')}  ` +
+        `${chalk.hex(CLI_COLORS.muted)(`${TIMELINE_ICONS['not-started']} Remaining: ${total - completed - state.documents.filter((d) => d.status === 'in-progress').length}`)}`,
     );
-    console.log(
-      `  ${chalk.hex(CLI_COLORS.muted)(`Overall: ${overallProgress}%`)}`,
-    );
+    console.log(`  ${chalk.hex(CLI_COLORS.muted)(`Overall: ${overallProgress}%`)}`);
     console.log();
   } catch (error: unknown) {
     spinner.fail('Failed to build timeline');

@@ -23,13 +23,8 @@ export class ProgressCalculatorService {
   /**
    * Calculate progress for a single phase.
    */
-  private calculateSinglePhaseProgress(
-    phase: PhaseDefinition,
-    documents: DocumentInfo[],
-  ): number {
-    const phaseDocs = documents.filter((doc) =>
-      phase.documentRange.includes(doc.number),
-    );
+  private calculateSinglePhaseProgress(phase: PhaseDefinition, documents: DocumentInfo[]): number {
+    const phaseDocs = documents.filter((doc) => phase.documentRange.includes(doc.number));
 
     if (phaseDocs.length === 0) return 0;
 

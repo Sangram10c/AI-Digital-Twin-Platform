@@ -42,7 +42,9 @@ export async function nextCommand(): Promise<void> {
     await statusParser.updateCurrentDocument(nextDoc.number, nextDoc.name);
 
     const paddedNum = String(nextDoc.number).padStart(2, '0');
-    await statusParser.updateCurrentTask(`${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+    await statusParser.updateCurrentTask(
+      `${paddedNum}-${nextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+    );
 
     // Find what comes after next
     const nextNextDoc = state.documents.find(
@@ -50,7 +52,9 @@ export async function nextCommand(): Promise<void> {
     );
     if (nextNextDoc) {
       const nextPadded = String(nextNextDoc.number).padStart(2, '0');
-      await statusParser.updateNextTask(`${nextPadded}-${nextNextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`);
+      await statusParser.updateNextTask(
+        `${nextPadded}-${nextNextDoc.name.toLowerCase().replace(/\s+/g, '-')}.md`,
+      );
     }
 
     await statusParser.writeStatus();

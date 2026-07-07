@@ -62,9 +62,6 @@ export const logger = {
    * Log a labeled value pair.
    */
   label(label: string, value: string): void {
-    console.log(
-      chalk.hex(CLI_COLORS.muted)(label + ':'),
-      chalk.white.bold(value),
-    );
+    console.log(chalk.hex(CLI_COLORS.muted)(label + ':'), chalk.white.bold(value));
   },
 } as const;
