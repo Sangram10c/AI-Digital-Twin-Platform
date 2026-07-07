@@ -1,0 +1,28 @@
+{
+  "name": "project-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Project Progress Manager (PPM) — CLI utility for AI Engineering Intelligence Platform",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "cli-table3": "^0.6.5",
+    "commander": "^13.1.0",
+    "fs-extra": "^11.3.0",
+    "glob": "^11.0.2",
+    "gray-matter": "^4.0.3",
+    "inquirer": "^12.6.0",
+    "ora": "^8.2.0",
+    "simple-git": "^3.27.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

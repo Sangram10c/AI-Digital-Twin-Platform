@@ -46,7 +46,15 @@
     "prepare": "npx husky || true",
     "precommit": "lint-staged",
     "prepush": "node scripts/utilities/pre-push.js",
-    "setup": "bash scripts/setup/setup.sh"
+    "setup": "bash scripts/setup/setup.sh",
+    "project:status": "npx tsx scripts/project-manager/index.ts status",
+    "project:update": "npx tsx scripts/project-manager/index.ts update",
+    "project:next": "npx tsx scripts/project-manager/index.ts next",
+    "project:complete": "npx tsx scripts/project-manager/index.ts complete",
+    "project:validate": "npx tsx scripts/project-manager/index.ts validate",
+    "project:report": "npx tsx scripts/project-manager/index.ts report",
+    "project:timeline": "npx tsx scripts/project-manager/index.ts timeline",
+    "project:help": "npx tsx scripts/project-manager/index.ts help"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.0",
