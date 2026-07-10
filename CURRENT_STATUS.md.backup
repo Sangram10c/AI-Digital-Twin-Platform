@@ -64,30 +64,30 @@ Status:
 
 | #   | Document                    | Status         |
 | --- | --------------------------- | -------------- |
-|01|Project Overview| ✅ Completed |
-|02|User Journeys| ✅ Completed |
-|03|Functional Requirements| ✅ Completed |
-|04|Non-Functional Requirements| ✅ Completed |
-|05|System Architecture| 🟡 In Progress |
-|06|Technology Stack| ⬜ Not Started |
-|07|Database ERD| ⬜ Not Started |
-|08|Database Design| ⬜ Not Started |
-|09|API Design| ⬜ Not Started |
-|10|Authentication Design| ⬜ Not Started |
-|11|GitHub Integration| ⬜ Not Started |
-|12|AI / RAG Architecture| ⬜ Not Started |
-|13|Search Engine Design| ⬜ Not Started |
-|14|Background Job Architecture| ⬜ Not Started |
-|15|Security Architecture| ⬜ Not Started |
-|16|Frontend Architecture| ⬜ Not Started |
-|17|Backend Architecture| ⬜ Not Started |
-|18|Folder Structure| ⬜ Not Started |
-|19|Coding Standards| ⬜ Not Started |
-|20|Testing Strategy| ⬜ Not Started |
-|21|Deployment Architecture| ⬜ Not Started |
-|22|Development Roadmap| ⬜ Not Started |
-|23|Future Enhancements| ⬜ Not Started |
-|24|Glossary| ⬜ Not Started |
+| 01  | Project Overview            | ✅ Completed   |
+| 02  | User Journeys               | ✅ Completed   |
+| 03  | Functional Requirements     | ✅ Completed   |
+| 04  | Non-Functional Requirements | ✅ Completed   |
+| 05  | System Architecture         | 🟡 In Progress |
+| 06  | Technology Stack            | ⬜ Not Started |
+| 07  | Database ERD                | ⬜ Not Started |
+| 08  | Database Design             | ⬜ Not Started |
+| 09  | API Design                  | ⬜ Not Started |
+| 10  | Authentication Design       | ⬜ Not Started |
+| 11  | GitHub Integration          | ⬜ Not Started |
+| 12  | AI / RAG Architecture       | ⬜ Not Started |
+| 13  | Search Engine Design        | ⬜ Not Started |
+| 14  | Background Job Architecture | ⬜ Not Started |
+| 15  | Security Architecture       | ⬜ Not Started |
+| 16  | Frontend Architecture       | ⬜ Not Started |
+| 17  | Backend Architecture        | ⬜ Not Started |
+| 18  | Folder Structure            | ⬜ Not Started |
+| 19  | Coding Standards            | ⬜ Not Started |
+| 20  | Testing Strategy            | ⬜ Not Started |
+| 21  | Deployment Architecture     | ⬜ Not Started |
+| 22  | Development Roadmap         | ⬜ Not Started |
+| 23  | Future Enhancements         | ⬜ Not Started |
+| 24  | Glossary                    | ⬜ Not Started |
 
 ---
 
@@ -95,13 +95,13 @@ Status:
 
 | Phase        | Progress |
 | ------------ | -------- |
-|Planning| 100% |
-|Architecture| 5% |
-|Backend| 0% |
-|Frontend| 0% |
+| Planning     | 100%     |
+| Architecture | 5%       |
+| Backend      | 0%       |
+| Frontend     | 0%       |
 | AI           | 0%       |
-|Testing| 0% |
-|Deployment| 0% |
+| Testing      | 0%       |
+| Deployment   | 0%       |
 
 ---
 
