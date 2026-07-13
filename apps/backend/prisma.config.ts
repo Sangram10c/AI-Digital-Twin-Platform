@@ -1,17 +1,18 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { defineConfig, env } from 'prisma/config';
 
-// Load .env from the monorepo root
-const envPath = path.resolve(__dirname, '../../.env');
-dotenv.config({ path: envPath });
-
-import { defineConfig } from 'prisma/config';
+// Load monorepo root .env first, then backend-local overrides.
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
+  migrations: {
+    path: 'prisma/migrations',
+    seed: 'tsx prisma/seed.ts',
+  },
   datasource: {
-    url:
-      process.env.DATABASE_URL ||
-      'postgresql://postgres:postgres@localhost:5432/ai_digital_twin?schema=public',
+    url: env('DATABASE_URL'),
   },
 });

@@ -1,5 +1,17 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// =============================================================================
+// AI Digital Twin Platform — Prisma Schema
+// =============================================================================
+// Phase 1: generator, datasource, PostgreSQL extensions, global enums.
+// Phase 2: Identity domain models (User, Session, RefreshToken, OAuthToken).
+// Phase 3: Workspace domain models (Workspace, WorkspaceSettings, WorkspaceMember).
+// Phase 4: Git Integration domain (GitProvider, ConnectedAccount, WebhookEvent, SyncHistory).
+// Phase 5: Repository domain (Repository, Branch, Commit, PullRequest, Review, Issue, Release, Tag, etc.).
+// Phase 6: Knowledge domain (KnowledgeSource, Documentation, KnowledgeChunk, Embedding, Citation).
+// Phase 7: AI domain (Conversation, Message, AIResponse, PromptHistory, ModelUsage, ConversationMemory, PinnedConversation).
+// Phase 8: Search & Platform domain (SearchHistory, SavedSearch, SearchCache, Notification, NotificationPreference, AuditLog, AnalyticsSnapshot, BackgroundJob).
+//
+// DATABASE_URL is read from .env via prisma.config.ts (Prisma 7+ convention).
+// =============================================================================
 
 generator client {
   provider        = "prisma-client-js"
@@ -8,213 +20,1467 @@ generator client {
 
 datasource db {
   provider   = "postgresql"
+  // Connection URL is managed in prisma.config.ts → datasource.url = env("DATABASE_URL")
   extensions = [vector]
 }
 
-// ========================================
-// User & Authentication
-// ========================================
+// =============================================================================
+// Global Enums
+// =============================================================================
+// Shared enumerations used across multiple domain models.
+// Model-specific enums will be co-located with their models in later phases.
 
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  passwordHash  String?
-  avatar        String?
-  role          Role      @default(USER)
-  emailVerified Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  accounts        Account[]
-  sessions        Session[]
-  workspaces      WorkspaceMember[]
-  ownedWorkspaces Workspace[]    @relation("WorkspaceOwner")
-  documents       Document[]
-  notifications   Notification[]
-
-  @@map("users")
+/// Lifecycle state of a user account.
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
 }
 
-model Account {
-  id                String   @id @default(cuid())
-  userId            String
-  provider          String
-  providerAccountId String
-  accessToken       String?
-  refreshToken      String?
-  expiresAt         Int?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
+/// Authentication / identity provider used for sign-in.
+enum ProviderType {
+  LOCAL
+  GOOGLE
+  GITHUB
+  MICROSOFT
+  SAML
+  OIDC
 }
 
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
+/// Operational state of a workspace.
+enum WorkspaceStatus {
+  ACTIVE
+  ARCHIVED
+  SUSPENDED
+  DELETED
 }
 
-// ========================================
-// Organization & Workspace
-// ========================================
-
-model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  logo      String?
-  plan      Plan     @default(FREE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  workspaces Workspace[]
-
-  @@map("organizations")
+/// Sync and connection state of an external code repository.
+enum RepositoryStatus {
+  ACTIVE
+  SYNCING
+  ERROR
+  DISCONNECTED
+  ARCHIVED
 }
 
-model Workspace {
-  id             String   @id @default(cuid())
-  name           String
-  slug           String   @unique
-  description    String?
-  ownerId        String
-  organizationId String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  owner        User              @relation("WorkspaceOwner", fields: [ownerId], references: [id])
-  organization Organization?     @relation(fields: [organizationId], references: [id])
-  members      WorkspaceMember[]
-  documents    Document[]
-
-  @@map("workspaces")
+/// Lifecycle state of an AI conversation session.
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  LOCKED
+  DELETED
 }
 
-model WorkspaceMember {
-  id          String        @id @default(cuid())
-  userId      String
-  workspaceId String
-  role        WorkspaceRole @default(MEMBER)
-  joinedAt    DateTime      @default(now())
-
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, workspaceId])
-  @@map("workspace_members")
+/// Category of an in-app notification.
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  SYSTEM
+  REMINDER
 }
 
-// ========================================
-// Documents & Knowledge
-// ========================================
-
-model Document {
-  id          String       @id @default(cuid())
-  title       String
-  content     String?
-  type        DocumentType @default(TEXT)
-  mimeType    String?
-  size        Int?
-  path        String?
-  workspaceId String
-  authorId    String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  author     User        @relation(fields: [authorId], references: [id])
-  embeddings Embedding[]
-
-  @@map("documents")
+/// Processing state of a background job (BullMQ / queue workers).
+enum JobStatus {
+  PENDING
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRYING
 }
 
-// ========================================
-// AI & Embeddings
-// ========================================
+// =============================================================================
+// Identity Domain (Phase 2)
+// =============================================================================
+// Core authentication entities for the platform.
+// User is the primary identity — workspaces and integrations reference it.
 
-model Embedding {
-  id         String                       @id @default(cuid())
-  documentId String
-  content    String
-  vector     Unsupported("vector(1536)")?
-  metadata   Json?
-  createdAt  DateTime                     @default(now())
-
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  @@map("embeddings")
-}
-
-// ========================================
-// Notifications
-// ========================================
-
-model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  title     String
-  message   String
-  type      NotificationType @default(INFO)
-  read      Boolean          @default(false)
-  data      Json?
-  createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("notifications")
-}
-
-// ========================================
-// Enums
-// ========================================
-
-enum Role {
+/// Platform-wide role used for RBAC (system-level permissions).
+enum UserRole {
   ADMIN
   USER
   VIEWER
 }
 
-enum Plan {
-  FREE
-  PRO
-  ENTERPRISE
+/// Primary identity entity — represents a registered platform user.
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  email        String  @unique @db.VarChar(320)
+  passwordHash String? @map("password_hash") @db.VarChar(255)
+
+  firstName   String? @map("first_name") @db.VarChar(100)
+  lastName    String? @map("last_name") @db.VarChar(100)
+  displayName String? @map("display_name") @db.VarChar(150)
+  avatarUrl   String? @map("avatar_url") @db.VarChar(2048)
+
+  role   UserRole   @default(USER)
+  status UserStatus @default(PENDING_VERIFICATION)
+
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+
+  timezone String? @default("UTC") @db.VarChar(64)
+  locale   String? @default("en") @db.VarChar(10)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  sessions      Session[]
+  refreshTokens RefreshToken[]
+  oauthTokens   OAuthToken[]
+
+  ownedWorkspaces        Workspace[]             @relation("WorkspaceOwner")
+  workspaceMemberships   WorkspaceMember[]
+  connectedAccounts      ConnectedAccount[]
+  conversations          Conversation[]
+  pinnedConversations    PinnedConversation[]
+  searchHistories        SearchHistory[]
+  savedSearches          SavedSearch[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
+  auditLogs              AuditLog[]
+
+  @@index([status], map: "idx_users_status")
+  @@index([deletedAt], map: "idx_users_deleted_at")
+  @@index([lastLoginAt], map: "idx_users_last_login_at")
+  @@map("users")
 }
 
-enum WorkspaceRole {
+/// Active authenticated session bound to a device / browser.
+/// Token values are never stored in plain text — only a SHA-256 hash.
+model Session {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId    String @map("user_id") @db.Uuid
+  tokenHash String @unique @map("token_hash") @db.VarChar(128)
+
+  expiresAt      DateTime  @map("expires_at")
+  revokedAt      DateTime? @map("revoked_at")
+  lastActivityAt DateTime  @default(now()) @map("last_activity_at")
+
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@index([userId], map: "idx_sessions_user_id")
+  @@index([expiresAt], map: "idx_sessions_expires_at")
+  @@index([revokedAt], map: "idx_sessions_revoked_at")
+  @@map("sessions")
+}
+
+/// Long-lived refresh token for JWT rotation.
+/// Stored as a hash — plain tokens exist only in HTTP-only cookies / client memory.
+model RefreshToken {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId    String  @map("user_id") @db.Uuid
+  sessionId String? @map("session_id") @db.Uuid
+
+  tokenHash String @unique @map("token_hash") @db.VarChar(128)
+
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  // Token rotation chain — points to the replacement token after rotation.
+  replacedByTokenId String? @unique @map("replaced_by_token_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session         Session?      @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  replacedByToken RefreshToken? @relation("RefreshTokenRotation", fields: [replacedByTokenId], references: [id], onDelete: SetNull)
+  replacesToken   RefreshToken? @relation("RefreshTokenRotation")
+
+  @@index([userId], map: "idx_refresh_tokens_user_id")
+  @@index([sessionId], map: "idx_refresh_tokens_session_id")
+  @@index([expiresAt], map: "idx_refresh_tokens_expires_at")
+  @@index([revokedAt], map: "idx_refresh_tokens_revoked_at")
+  @@map("refresh_tokens")
+}
+
+/// OAuth provider credentials linked to a user account.
+/// Access / refresh tokens are encrypted at the application layer before persistence.
+model OAuthToken {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId   String       @map("user_id") @db.Uuid
+  provider ProviderType
+
+  providerAccountId String @map("provider_account_id") @db.VarChar(255)
+
+  accessTokenEncrypted  String  @map("access_token_encrypted") @db.Text
+  refreshTokenEncrypted String? @map("refresh_token_encrypted") @db.Text
+
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+
+  tokenType String?  @default("Bearer") @map("token_type") @db.VarChar(32)
+  scopes    String[] @default([])
+
+  // Provider-specific profile metadata (avatar URL, username, etc.)
+  providerMetadata Json? @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  connectedAccount ConnectedAccount?
+
+  @@unique([provider, providerAccountId], map: "uq_oauth_tokens_provider_account")
+  @@unique([userId, provider], map: "uq_oauth_tokens_user_provider")
+  @@index([userId], map: "idx_oauth_tokens_user_id")
+  @@index([accessTokenExpiresAt], map: "idx_oauth_tokens_access_expires_at")
+  @@map("oauth_tokens")
+}
+
+// =============================================================================
+// Workspace Domain (Phase 3)
+// =============================================================================
+// Multi-workspace tenancy — each workspace is owned by a user and can have
+// multiple members. Organization support will be added in a future phase.
+
+/// Role a user holds within a specific workspace.
+enum WorkspaceMemberRole {
   OWNER
   ADMIN
   MEMBER
   VIEWER
 }
 
-enum DocumentType {
-  TEXT
-  MARKDOWN
-  PDF
-  CODE
-  IMAGE
+/// Isolated workspace — the primary tenancy boundary for repositories, AI, and knowledge.
+model Workspace {
+  id String @id @default(uuid()) @db.Uuid
+
+  name        String  @db.VarChar(150)
+  slug        String  @unique @db.VarChar(150)
+  description String? @db.Text
+
+  ownerId String          @map("owner_id") @db.Uuid
+  status  WorkspaceStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  owner    User               @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  settings WorkspaceSettings?
+  members  WorkspaceMember[]
+
+  connectedAccounts ConnectedAccount[]
+  webhookEvents     WebhookEvent[]
+  syncHistories     SyncHistory[]
+  repositories      Repository[]
+
+  knowledgeSources   KnowledgeSource[]
+  knowledgeChunks    KnowledgeChunk[]
+  conversations      Conversation[]
+  searchHistories    SearchHistory[]
+  savedSearches      SavedSearch[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  analyticsSnapshots AnalyticsSnapshot[]
+  backgroundJobs     BackgroundJob[]
+
+  @@index([ownerId], map: "idx_workspaces_owner_id")
+  @@index([status], map: "idx_workspaces_status")
+  @@index([deletedAt], map: "idx_workspaces_deleted_at")
+  @@map("workspaces")
+}
+
+/// Per-workspace configuration — AI defaults, feature toggles, and extensible preferences.
+model WorkspaceSettings {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String @unique @map("workspace_id") @db.Uuid
+
+  defaultAiProvider     String? @map("default_ai_provider") @db.VarChar(64)
+  defaultAiModel        String? @map("default_ai_model") @db.VarChar(128)
+  defaultEmbeddingModel String? @map("default_embedding_model") @db.VarChar(128)
+
+  autoSyncEnabled      Boolean @default(true) @map("auto_sync_enabled")
+  notificationsEnabled Boolean @default(true) @map("notifications_enabled")
+
+  // Extensible preferences without schema migrations (theme, locale, etc.)
+  preferences Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("workspace_settings")
+}
+
+/// Membership join table — links users to workspaces with a scoped role.
+model WorkspaceMember {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String @map("workspace_id") @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+
+  role WorkspaceMemberRole @default(MEMBER)
+
+  joinedAt DateTime @default(now()) @map("joined_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId], map: "uq_workspace_members_workspace_user")
+  @@index([userId], map: "idx_workspace_members_user_id")
+  @@index([role], map: "idx_workspace_members_role")
+  @@map("workspace_members")
+}
+
+// =============================================================================
+// Git Integration Domain (Phase 4)
+// =============================================================================
+// External git provider connections, webhook ingestion, and sync audit trail.
+
+/// Supported source-control platforms.
+enum GitProviderType {
+  GITHUB
+  GITLAB
+  BITBUCKET
+}
+
+/// Connection state of a linked git provider account.
+enum ConnectedAccountStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+  TOKEN_EXPIRED
+}
+
+/// Inbound webhook processing state.
+enum WebhookEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+/// Normalized webhook event categories across providers.
+enum WebhookEventType {
+  PUSH
+  PULL_REQUEST
+  ISSUE
+  RELEASE
+  INSTALLATION
+  REPOSITORY
   OTHER
 }
 
-enum NotificationType {
-  INFO
-  SUCCESS
-  WARNING
+/// What initiated a synchronization run.
+enum SyncTrigger {
+  MANUAL
+  SCHEDULED
+  WEBHOOK
+  INITIAL
+}
+
+/// Catalog of git providers the platform supports (seeded reference data).
+model GitProvider {
+  id String @id @default(uuid()) @db.Uuid
+
+  type        GitProviderType @unique
+  name        String          @db.VarChar(64)
+  displayName String          @map("display_name") @db.VarChar(128)
+  apiBaseUrl  String          @map("api_base_url") @db.VarChar(512)
+  isEnabled   Boolean         @default(true) @map("is_enabled")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  connectedAccounts ConnectedAccount[]
+  repositories      Repository[]
+
+  @@map("git_providers")
+}
+
+/// A git provider account linked to a workspace (e.g. GitHub user/org).
+model ConnectedAccount {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId   String @map("workspace_id") @db.Uuid
+  userId        String @map("user_id") @db.Uuid
+  gitProviderId String @map("git_provider_id") @db.Uuid
+
+  // Optional link to identity OAuth credentials used for this connection.
+  oauthTokenId String? @unique @map("oauth_token_id") @db.Uuid
+
+  providerAccountId  String  @map("provider_account_id") @db.VarChar(255)
+  providerUsername   String  @map("provider_username") @db.VarChar(255)
+  providerAccountUrl String? @map("provider_account_url") @db.VarChar(2048)
+  providerMetadata   Json?   @map("provider_metadata") @db.JsonB
+
+  status ConnectedAccountStatus @default(ACTIVE)
+
+  connectedAt    DateTime  @default(now()) @map("connected_at")
+  disconnectedAt DateTime? @map("disconnected_at")
+  lastSyncedAt   DateTime? @map("last_synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gitProvider   GitProvider    @relation(fields: [gitProviderId], references: [id], onDelete: Restrict)
+  oauthToken    OAuthToken?    @relation(fields: [oauthTokenId], references: [id], onDelete: SetNull)
+  webhookEvents WebhookEvent[]
+  syncHistories SyncHistory[]
+  repositories  Repository[]
+
+  @@unique([workspaceId, gitProviderId, providerAccountId], map: "uq_connected_accounts_workspace_provider_account")
+  @@index([userId], map: "idx_connected_accounts_user_id")
+  @@index([status], map: "idx_connected_accounts_status")
+  @@index([lastSyncedAt], map: "idx_connected_accounts_last_synced_at")
+  @@map("connected_accounts")
+}
+
+/// Immutable log of inbound provider webhook deliveries.
+model WebhookEvent {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId        String @map("workspace_id") @db.Uuid
+  connectedAccountId String @map("connected_account_id") @db.Uuid
+
+  providerEventId String?          @map("provider_event_id") @db.VarChar(255)
+  eventType       WebhookEventType
+  action          String?          @db.VarChar(64)
+
+  payload        Json               @db.JsonB
+  signatureValid Boolean            @default(false) @map("signature_valid")
+  status         WebhookEventStatus @default(PENDING)
+
+  errorMessage String?   @map("error_message") @db.Text
+  receivedAt   DateTime  @default(now()) @map("received_at")
+  processedAt  DateTime? @map("processed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connectedAccount ConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId], map: "idx_webhook_events_workspace_id")
+  @@index([connectedAccountId], map: "idx_webhook_events_connected_account_id")
+  @@index([status], map: "idx_webhook_events_status")
+  @@index([receivedAt], map: "idx_webhook_events_received_at")
+  @@index([eventType], map: "idx_webhook_events_event_type")
+  @@map("webhook_events")
+}
+
+/// Audit trail for repository synchronization runs against a connected account.
+model SyncHistory {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId        String @map("workspace_id") @db.Uuid
+  connectedAccountId String @map("connected_account_id") @db.Uuid
+
+  trigger SyncTrigger
+  status  JobStatus   @default(PENDING)
+
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  repositoriesSynced Int @default(0) @map("repositories_synced")
+  commitsSynced      Int @default(0) @map("commits_synced")
+
+  errorMessage String? @map("error_message") @db.Text
+  metadata     Json?   @db.JsonB
+
+  // BullMQ job reference for worker correlation.
+  jobId String? @map("job_id") @db.VarChar(128)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connectedAccount ConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId], map: "idx_sync_histories_workspace_id")
+  @@index([connectedAccountId], map: "idx_sync_histories_connected_account_id")
+  @@index([status], map: "idx_sync_histories_status")
+  @@index([createdAt], map: "idx_sync_histories_created_at")
+  @@map("sync_histories")
+}
+
+// =============================================================================
+// Repository Domain (Phase 5)
+// =============================================================================
+// Engineering metadata synced from external git providers.
+// History tables (commits, PRs, issues) are immutable — no soft delete.
+
+/// Pull request lifecycle state (normalized across providers).
+enum PullRequestState {
+  OPEN
+  CLOSED
+  MERGED
+}
+
+/// Issue lifecycle state.
+enum IssueState {
+  OPEN
+  CLOSED
+}
+
+/// Code review outcome state.
+enum ReviewState {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  COMMENTED
+  DISMISSED
+}
+
+/// A synced git repository within a workspace.
+model Repository {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId        String @map("workspace_id") @db.Uuid
+  connectedAccountId String @map("connected_account_id") @db.Uuid
+  gitProviderId      String @map("git_provider_id") @db.Uuid
+
+  providerRepositoryId String @map("provider_repository_id") @db.VarChar(255)
+
+  name        String  @db.VarChar(255)
+  fullName    String  @map("full_name") @db.VarChar(512)
+  description String? @db.Text
+  url         String? @db.VarChar(2048)
+
+  defaultBranch String  @default("main") @map("default_branch") @db.VarChar(255)
+  isPrivate     Boolean @default(false) @map("is_private")
+  isFork        Boolean @default(false) @map("is_fork")
+  language      String? @db.VarChar(64)
+
+  status RepositoryStatus @default(ACTIVE)
+
+  lastSyncedAt     DateTime? @map("last_synced_at")
+  providerMetadata Json?     @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connectedAccount ConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+  gitProvider      GitProvider      @relation(fields: [gitProviderId], references: [id], onDelete: Restrict)
+
+  branches     Branch[]
+  commits      Commit[]
+  pullRequests PullRequest[]
+  issues       Issue[]
+  releases     Release[]
+  tags         Tag[]
+  contributors RepositoryContributor[]
+  statistics   RepositoryStatistics?
+
+  knowledgeSources KnowledgeSource[]
+  documentation    Documentation[]
+  knowledgeChunks  KnowledgeChunk[]
+  conversations    Conversation[]
+  searchHistories  SearchHistory[]
+
+  @@unique([connectedAccountId, providerRepositoryId], map: "uq_repositories_account_provider_repo")
+  @@index([workspaceId], map: "idx_repositories_workspace_id")
+  @@index([gitProviderId], map: "idx_repositories_git_provider_id")
+  @@index([status], map: "idx_repositories_status")
+  @@index([deletedAt], map: "idx_repositories_deleted_at")
+  @@index([lastSyncedAt], map: "idx_repositories_last_synced_at")
+  @@map("repositories")
+}
+
+/// Git branch tracked within a repository.
+model Branch {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  name             String  @db.VarChar(255)
+  isDefault        Boolean @default(false) @map("is_default")
+  lastCommitSha    String? @map("last_commit_sha") @db.VarChar(64)
+  providerBranchId String? @map("provider_branch_id") @db.VarChar(255)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  commits    Commit[]
+
+  @@unique([repositoryId, name], map: "uq_branches_repository_name")
+  @@index([isDefault], map: "idx_branches_is_default")
+  @@map("branches")
+}
+
+/// Immutable commit record — engineering history is never soft-deleted.
+model Commit {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String  @map("repository_id") @db.Uuid
+  branchId     String? @map("branch_id") @db.Uuid
+
+  sha     String @db.VarChar(64)
+  message String @db.Text
+
+  authorName  String? @map("author_name") @db.VarChar(255)
+  authorEmail String? @map("author_email") @db.VarChar(320)
+
+  committedAt DateTime @map("committed_at")
+
+  additions    Int? @default(0)
+  deletions    Int? @default(0)
+  changedFiles Int? @default(0) @map("changed_files")
+
+  parentShas       String[] @default([]) @map("parent_shas")
+  providerMetadata Json?    @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  branch     Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull)
+
+  @@unique([repositoryId, sha], map: "uq_commits_repository_sha")
+  @@index([branchId], map: "idx_commits_branch_id")
+  @@index([committedAt], map: "idx_commits_committed_at")
+  @@index([authorEmail], map: "idx_commits_author_email")
+  @@map("commits")
+}
+
+/// Pull request / merge request synced from a provider.
+model PullRequest {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  number Int
+  title  String  @db.VarChar(512)
+  body   String? @db.Text
+
+  state PullRequestState @default(OPEN)
+
+  sourceBranch String @map("source_branch") @db.VarChar(255)
+  targetBranch String @map("target_branch") @db.VarChar(255)
+
+  authorUsername        String @map("author_username") @db.VarChar(255)
+  providerPullRequestId String @map("provider_pull_request_id") @db.VarChar(255)
+
+  openedAt DateTime  @map("opened_at")
+  closedAt DateTime? @map("closed_at")
+  mergedAt DateTime? @map("merged_at")
+
+  providerMetadata Json? @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  reviews    Review[]
+
+  @@unique([repositoryId, number], map: "uq_pull_requests_repository_number")
+  @@index([state], map: "idx_pull_requests_state")
+  @@index([openedAt], map: "idx_pull_requests_opened_at")
+  @@index([authorUsername], map: "idx_pull_requests_author_username")
+  @@map("pull_requests")
+}
+
+/// Code review on a pull request.
+model Review {
+  id String @id @default(uuid()) @db.Uuid
+
+  pullRequestId String @map("pull_request_id") @db.Uuid
+
+  reviewerUsername String      @map("reviewer_username") @db.VarChar(255)
+  state            ReviewState @default(PENDING)
+  body             String?     @db.Text
+
+  providerReviewId String?   @map("provider_review_id") @db.VarChar(255)
+  submittedAt      DateTime? @map("submitted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  pullRequest PullRequest @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  @@index([pullRequestId], map: "idx_reviews_pull_request_id")
+  @@index([state], map: "idx_reviews_state")
+  @@index([reviewerUsername], map: "idx_reviews_reviewer_username")
+  @@map("reviews")
+}
+
+/// Issue / ticket synced from a provider.
+model Issue {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  number Int
+  title  String  @db.VarChar(512)
+  body   String? @db.Text
+
+  state IssueState @default(OPEN)
+
+  authorUsername  String @map("author_username") @db.VarChar(255)
+  providerIssueId String @map("provider_issue_id") @db.VarChar(255)
+
+  openedAt DateTime  @map("opened_at")
+  closedAt DateTime? @map("closed_at")
+
+  providerMetadata Json? @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, number], map: "uq_issues_repository_number")
+  @@index([state], map: "idx_issues_state")
+  @@index([openedAt], map: "idx_issues_opened_at")
+  @@map("issues")
+}
+
+/// Release / tag publish event from a provider.
+model Release {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  tagName String  @map("tag_name") @db.VarChar(255)
+  name    String? @db.VarChar(512)
+  body    String? @db.Text
+
+  isPrerelease Boolean @default(false) @map("is_prerelease")
+  isDraft      Boolean @default(false) @map("is_draft")
+
+  providerReleaseId String?   @map("provider_release_id") @db.VarChar(255)
+  publishedAt       DateTime? @map("published_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, tagName], map: "uq_releases_repository_tag_name")
+  @@index([publishedAt], map: "idx_releases_published_at")
+  @@map("releases")
+}
+
+/// Git tag reference within a repository.
+model Tag {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  name      String @db.VarChar(255)
+  commitSha String @map("commit_sha") @db.VarChar(64)
+
+  providerTagId String? @map("provider_tag_id") @db.VarChar(255)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, name], map: "uq_tags_repository_name")
+  @@index([commitSha], map: "idx_tags_commit_sha")
+  @@map("tags")
+}
+
+/// Aggregated contributor activity for a repository.
+model RepositoryContributor {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  username           String    @db.VarChar(255)
+  commitCount        Int       @default(0) @map("commit_count")
+  lastContributionAt DateTime? @map("last_contribution_at")
+
+  providerMetadata Json? @map("provider_metadata") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@unique([repositoryId, username], map: "uq_repository_contributors_repository_username")
+  @@index([commitCount], map: "idx_repository_contributors_commit_count")
+  @@map("repository_contributors")
+}
+
+/// Point-in-time repository metrics (refreshed by sync / analytics jobs).
+model RepositoryStatistics {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @unique @map("repository_id") @db.Uuid
+
+  starCount            Int @default(0) @map("star_count")
+  forkCount            Int @default(0) @map("fork_count")
+  watcherCount         Int @default(0) @map("watcher_count")
+  openIssueCount       Int @default(0) @map("open_issue_count")
+  openPullRequestCount Int @default(0) @map("open_pull_request_count")
+  commitCount          Int @default(0) @map("commit_count")
+  contributorCount     Int @default(0) @map("contributor_count")
+
+  lastCalculatedAt DateTime? @map("last_calculated_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@map("repository_statistics")
+}
+
+// =============================================================================
+// Knowledge Domain (Phase 6)
+// =============================================================================
+// RAG pipeline storage — chunked text, vector embeddings, and source citations.
+// Powers semantic search and AI grounding.
+
+/// Origin type of a knowledge source record.
+enum KnowledgeSourceType {
+  COMMIT
+  PULL_REQUEST
+  ISSUE
+  RELEASE
+  DOCUMENTATION
+  REPOSITORY
+  CUSTOM
+}
+
+/// Category of synced documentation content.
+enum DocumentationType {
+  README
+  WIKI
+  MARKDOWN
+  ADR
+  CHANGELOG
+  API_DOC
+  OTHER
+}
+
+/// Canonical pointer to an engineering artifact used as knowledge input.
+model KnowledgeSource {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId  String  @map("workspace_id") @db.Uuid
+  repositoryId String? @map("repository_id") @db.Uuid
+
+  sourceType KnowledgeSourceType @map("source_type")
+
+  // Provider-native identifier (e.g. commit SHA, PR number as string).
+  externalRefId String @map("external_ref_id") @db.VarChar(255)
+
+  // Optional internal UUID pointing to a synced domain entity (resolved in app layer).
+  internalRefId String? @map("internal_ref_id") @db.Uuid
+
+  title String? @db.VarChar(512)
+  url   String? @db.VarChar(2048)
+  path  String? @db.VarChar(1024)
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  knowledgeChunks KnowledgeChunk[]
+  citations       Citation[]
+
+  @@unique([workspaceId, sourceType, externalRefId], map: "uq_knowledge_sources_workspace_type_ref")
+  @@index([repositoryId], map: "idx_knowledge_sources_repository_id")
+  @@index([sourceType], map: "idx_knowledge_sources_source_type")
+  @@map("knowledge_sources")
+}
+
+/// Documentation file synced from a repository (README, wiki, ADR, etc.).
+model Documentation {
+  id String @id @default(uuid()) @db.Uuid
+
+  repositoryId String @map("repository_id") @db.Uuid
+
+  title    String            @db.VarChar(512)
+  content  String?           @db.Text
+  filePath String?           @map("file_path") @db.VarChar(1024)
+  type     DocumentationType @default(OTHER)
+
+  providerDocId String?   @map("provider_doc_id") @db.VarChar(255)
+  lastSyncedAt  DateTime? @map("last_synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  knowledgeChunks KnowledgeChunk[]
+
+  @@unique([repositoryId, filePath], map: "uq_documentation_repository_file_path")
+  @@index([type], map: "idx_documentation_type")
+  @@map("documentation")
+}
+
+/// Text chunk prepared for embedding and retrieval (RAG).
+model KnowledgeChunk {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId  String  @map("workspace_id") @db.Uuid
+  repositoryId String? @map("repository_id") @db.Uuid
+
+  knowledgeSourceId String? @map("knowledge_source_id") @db.Uuid
+  documentationId   String? @map("documentation_id") @db.Uuid
+
+  content     String  @db.Text
+  chunkIndex  Int     @map("chunk_index")
+  tokenCount  Int?    @map("token_count")
+  contentHash String? @map("content_hash") @db.VarChar(64)
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository      Repository?      @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  knowledgeSource KnowledgeSource? @relation(fields: [knowledgeSourceId], references: [id], onDelete: SetNull)
+  documentation   Documentation?   @relation(fields: [documentationId], references: [id], onDelete: SetNull)
+
+  embedding Embedding?
+  citations Citation[]
+
+  @@unique([knowledgeSourceId, chunkIndex], map: "uq_knowledge_chunks_source_index")
+  @@unique([documentationId, chunkIndex], map: "uq_knowledge_chunks_documentation_index")
+  @@index([repositoryId], map: "idx_knowledge_chunks_repository_id")
+  @@index([documentationId], map: "idx_knowledge_chunks_documentation_id")
+  @@index([contentHash], map: "idx_knowledge_chunks_content_hash")
+  @@index([deletedAt], map: "idx_knowledge_chunks_deleted_at")
+  @@map("knowledge_chunks")
+}
+
+/// Vector embedding for a knowledge chunk (pgvector).
+/// Dimensions default to 1536 (OpenAI text-embedding-3-small) — configurable per model.
+model Embedding {
+  id String @id @default(uuid()) @db.Uuid
+
+  knowledgeChunkId String @unique @map("knowledge_chunk_id") @db.Uuid
+
+  model      String @db.VarChar(128)
+  dimensions Int    @default(1536)
+
+  vector Unsupported("vector(1536)")?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  knowledgeChunk KnowledgeChunk @relation(fields: [knowledgeChunkId], references: [id], onDelete: Cascade)
+
+  @@index([model], map: "idx_embeddings_model")
+  @@map("embeddings")
+}
+
+/// Traceable excerpt linking retrieved knowledge to its source (RAG citations).
+model Citation {
+  id String @id @default(uuid()) @db.Uuid
+
+  knowledgeChunkId  String  @map("knowledge_chunk_id") @db.Uuid
+  knowledgeSourceId String? @map("knowledge_source_id") @db.Uuid
+  messageId         String? @map("message_id") @db.Uuid
+  aiResponseId      String? @map("ai_response_id") @db.Uuid
+
+  excerpt        String @db.Text
+  startOffset    Int?   @map("start_offset")
+  endOffset      Int?   @map("end_offset")
+  relevanceScore Float? @map("relevance_score")
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  knowledgeChunk  KnowledgeChunk   @relation(fields: [knowledgeChunkId], references: [id], onDelete: Cascade)
+  knowledgeSource KnowledgeSource? @relation(fields: [knowledgeSourceId], references: [id], onDelete: SetNull)
+  message         Message?         @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  aiResponse      AIResponse?      @relation(fields: [aiResponseId], references: [id], onDelete: SetNull)
+
+  @@index([knowledgeSourceId], map: "idx_citations_knowledge_source_id")
+  @@index([messageId], map: "idx_citations_message_id")
+  @@index([aiResponseId], map: "idx_citations_ai_response_id")
+  @@index([relevanceScore], map: "idx_citations_relevance_score")
+  @@map("citations")
+}
+
+// =============================================================================
+// AI Domain (Phase 7)
+// =============================================================================
+// Conversational AI — chat sessions, messages, responses, prompts, and usage tracking.
+
+/// Role of a message in a conversation thread.
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+/// Type of prompt stored in prompt history.
+enum PromptType {
+  SYSTEM
+  USER
+  RETRIEVAL
+  TOOL
+  CUSTOM
+}
+
+/// Why an AI model stopped generating.
+enum AiFinishReason {
+  STOP
+  LENGTH
+  TOOL_CALL
+  CONTENT_FILTER
   ERROR
+}
+
+/// AI chat session scoped to a workspace (optionally pinned to a repository).
+model Conversation {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId  String  @map("workspace_id") @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  repositoryId String? @map("repository_id") @db.Uuid
+
+  title  String?            @db.VarChar(512)
+  status ConversationStatus @default(ACTIVE)
+
+  aiProvider String? @map("ai_provider") @db.VarChar(64)
+  aiModel    String? @map("ai_model") @db.VarChar(128)
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+
+  messages      Message[]
+  promptHistory PromptHistory[]
+  modelUsages   ModelUsage[]
+  memories      ConversationMemory[]
+  pinnedBy      PinnedConversation[]
+
+  @@index([workspaceId], map: "idx_conversations_workspace_id")
+  @@index([userId], map: "idx_conversations_user_id")
+  @@index([repositoryId], map: "idx_conversations_repository_id")
+  @@index([status], map: "idx_conversations_status")
+  @@index([deletedAt], map: "idx_conversations_deleted_at")
+  @@map("conversations")
+}
+
+/// Single turn in a conversation thread.
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+
+  conversationId String @map("conversation_id") @db.Uuid
+
+  role           MessageRole
+  content        String      @db.Text
+  sequenceNumber Int         @map("sequence_number")
+  tokenCount     Int?        @map("token_count")
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conversation  Conversation    @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  aiResponse    AIResponse?
+  citations     Citation[]
+  promptHistory PromptHistory[]
+  modelUsages   ModelUsage[]
+
+  @@unique([conversationId, sequenceNumber], map: "uq_messages_conversation_sequence")
+  @@index([role], map: "idx_messages_role")
+  @@index([createdAt], map: "idx_messages_created_at")
+  @@map("messages")
+}
+
+/// Structured metadata for an assistant message (provider response details).
+model AIResponse {
+  id String @id @default(uuid()) @db.Uuid
+
+  messageId String @unique @map("message_id") @db.Uuid
+
+  finishReason      AiFinishReason? @map("finish_reason")
+  latencyMs         Int?            @map("latency_ms")
+  providerRequestId String?         @map("provider_request_id") @db.VarChar(255)
+
+  // Raw provider payload for debugging / audit (never expose to frontend).
+  rawResponse Json? @map("raw_response") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  message     Message      @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  citations   Citation[]
+  modelUsages ModelUsage[]
+
+  @@index([finishReason], map: "idx_ai_responses_finish_reason")
+  @@map("ai_responses")
+}
+
+/// Audit log of prompts sent to AI models (system, retrieval, tool contexts).
+model PromptHistory {
+  id String @id @default(uuid()) @db.Uuid
+
+  conversationId String  @map("conversation_id") @db.Uuid
+  messageId      String? @map("message_id") @db.Uuid
+
+  promptType PromptType @map("prompt_type")
+  content    String     @db.Text
+  version    Int        @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId], map: "idx_prompt_history_conversation_id")
+  @@index([messageId], map: "idx_prompt_history_message_id")
+  @@index([promptType], map: "idx_prompt_history_prompt_type")
+  @@map("prompt_history")
+}
+
+/// Token and cost usage per AI inference call.
+model ModelUsage {
+  id String @id @default(uuid()) @db.Uuid
+
+  conversationId String  @map("conversation_id") @db.Uuid
+  messageId      String? @map("message_id") @db.Uuid
+  aiResponseId   String? @map("ai_response_id") @db.Uuid
+
+  provider String @db.VarChar(64)
+  model    String @db.VarChar(128)
+
+  promptTokens     Int @default(0) @map("prompt_tokens")
+  completionTokens Int @default(0) @map("completion_tokens")
+  totalTokens      Int @default(0) @map("total_tokens")
+
+  estimatedCostUsd Decimal? @map("estimated_cost_usd") @db.Decimal(10, 6)
+  latencyMs        Int?     @map("latency_ms")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message      Message?     @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  aiResponse   AIResponse?  @relation(fields: [aiResponseId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId], map: "idx_model_usages_conversation_id")
+  @@index([provider, model], map: "idx_model_usages_provider_model")
+  @@index([createdAt], map: "idx_model_usages_created_at")
+  @@map("model_usages")
+}
+
+/// Long-term memory snippet attached to a conversation for context window extension.
+model ConversationMemory {
+  id String @id @default(uuid()) @db.Uuid
+
+  conversationId String @map("conversation_id") @db.Uuid
+
+  content    String @db.Text
+  importance Float  @default(0.5)
+
+  expiresAt DateTime? @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId], map: "idx_conversation_memories_conversation_id")
+  @@index([importance], map: "idx_conversation_memories_importance")
+  @@index([expiresAt], map: "idx_conversation_memories_expires_at")
+  @@map("conversation_memories")
+}
+
+/// Per-user pinned conversation (quick access in UI).
+model PinnedConversation {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId         String @map("user_id") @db.Uuid
+  conversationId String @map("conversation_id") @db.Uuid
+
+  pinnedAt DateTime @default(now()) @map("pinned_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId], map: "uq_pinned_conversations_user_conversation")
+  @@index([pinnedAt], map: "idx_pinned_conversations_pinned_at")
+  @@map("pinned_conversations")
+}
+
+// =============================================================================
+// Search Domain (Phase 8)
+// =============================================================================
+
+/// Search strategy used for a query.
+enum SearchType {
+  KEYWORD
+  SEMANTIC
+  HYBRID
+}
+
+/// Immutable log of a search query executed by a user.
+model SearchHistory {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId  String  @map("workspace_id") @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  repositoryId String? @map("repository_id") @db.Uuid
+
+  query         String     @db.VarChar(1024)
+  searchType    SearchType @map("search_type")
+  resultsCount  Int        @default(0) @map("results_count")
+  latencyMs     Int?       @map("latency_ms")
+  searchFilters Json?      @map("search_filters") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId], map: "idx_search_histories_workspace_id")
+  @@index([userId], map: "idx_search_histories_user_id")
+  @@index([repositoryId], map: "idx_search_histories_repository_id")
+  @@index([searchType], map: "idx_search_histories_search_type")
+  @@index([createdAt], map: "idx_search_histories_created_at")
+  @@map("search_histories")
+}
+
+/// Named, reusable search query saved by a user.
+model SavedSearch {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String @map("workspace_id") @db.Uuid
+  userId      String @map("user_id") @db.Uuid
+
+  name          String     @db.VarChar(150)
+  query         String     @db.VarChar(1024)
+  searchType    SearchType @default(HYBRID) @map("search_type")
+  searchFilters Json?      @map("search_filters") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId, name], map: "uq_saved_searches_user_workspace_name")
+  @@index([workspaceId], map: "idx_saved_searches_workspace_id")
+  @@map("saved_searches")
+}
+
+/// Cached search results keyed by query hash (TTL-based invalidation).
+model SearchCache {
+  id String @id @default(uuid()) @db.Uuid
+
+  queryHash  String     @unique @map("query_hash") @db.VarChar(64)
+  searchType SearchType @map("search_type")
+
+  results   Json     @db.JsonB
+  expiresAt DateTime @map("expires_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([searchType], map: "idx_search_cache_search_type")
+  @@index([expiresAt], map: "idx_search_cache_expires_at")
+  @@map("search_cache")
+}
+
+// =============================================================================
+// Platform Domain (Phase 8)
+// =============================================================================
+
+/// Category of analytics snapshot.
+enum AnalyticsSnapshotType {
+  REPOSITORY
+  DEVELOPER
+  AI
+  SEARCH
+  WORKSPACE
+  PLATFORM
+}
+
+/// Type of background job processed by BullMQ workers.
+enum BackgroundJobType {
+  REPOSITORY_SYNC
+  EMBEDDING_GENERATION
+  NOTIFICATION_DELIVERY
+  ANALYTICS_AGGREGATION
+  CLEANUP
+  WEBHOOK_PROCESSING
+}
+
+/// In-app notification delivered to a user.
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String? @map("workspace_id") @db.Uuid
+  userId      String  @map("user_id") @db.Uuid
+
+  type    NotificationType @default(INFO)
+  title   String           @db.VarChar(512)
+  message String           @db.Text
+
+  isRead Boolean   @default(false) @map("is_read")
+  readAt DateTime? @map("read_at")
+
+  data Json? @db.JsonB
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_notifications_user_id")
+  @@index([workspaceId], map: "idx_notifications_workspace_id")
+  @@index([type], map: "idx_notifications_type")
+  @@index([isRead], map: "idx_notifications_is_read")
+  @@index([deletedAt], map: "idx_notifications_deleted_at")
+  @@index([createdAt], map: "idx_notifications_created_at")
+  @@map("notifications")
+}
+
+/// Per-user notification channel preferences.
+model NotificationPreference {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @unique @map("user_id") @db.Uuid
+
+  emailEnabled Boolean @default(true) @map("email_enabled")
+  pushEnabled  Boolean @default(true) @map("push_enabled")
+  inAppEnabled Boolean @default(true) @map("in_app_enabled")
+
+  // Per NotificationType overrides stored as JSON.
+  typePreferences Json? @map("type_preferences") @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+/// Immutable security and activity audit record.
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String? @map("workspace_id") @db.Uuid
+  userId      String? @map("user_id") @db.Uuid
+
+  action     String  @db.VarChar(128)
+  entityType String  @map("entity_type") @db.VarChar(128)
+  entityId   String? @map("entity_id") @db.Uuid
+
+  ipAddress String? @map("ip_address") @db.VarChar(45)
+  userAgent String? @map("user_agent") @db.VarChar(512)
+
+  metadata Json? @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId], map: "idx_audit_logs_workspace_id")
+  @@index([userId], map: "idx_audit_logs_user_id")
+  @@index([action], map: "idx_audit_logs_action")
+  @@index([entityType, entityId], map: "idx_audit_logs_entity")
+  @@index([createdAt], map: "idx_audit_logs_created_at")
+  @@map("audit_logs")
+}
+
+/// Point-in-time aggregated metrics snapshot.
+model AnalyticsSnapshot {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String? @map("workspace_id") @db.Uuid
+
+  snapshotType AnalyticsSnapshotType @map("snapshot_type")
+  periodStart  DateTime              @map("period_start")
+  periodEnd    DateTime              @map("period_end")
+
+  metrics Json @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId], map: "idx_analytics_snapshots_workspace_id")
+  @@index([snapshotType], map: "idx_analytics_snapshots_snapshot_type")
+  @@index([periodStart, periodEnd], map: "idx_analytics_snapshots_period")
+  @@map("analytics_snapshots")
+}
+
+/// Background job record tracked by BullMQ workers.
+model BackgroundJob {
+  id String @id @default(uuid()) @db.Uuid
+
+  workspaceId String? @map("workspace_id") @db.Uuid
+
+  jobType BackgroundJobType @map("job_type")
+  status  JobStatus         @default(PENDING)
+
+  // BullMQ job ID for worker correlation.
+  queueJobId String? @unique @map("queue_job_id") @db.VarChar(128)
+
+  payload      Json?   @db.JsonB
+  result       Json?   @db.JsonB
+  errorMessage String? @map("error_message") @db.Text
+
+  scheduledAt DateTime? @map("scheduled_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId], map: "idx_background_jobs_workspace_id")
+  @@index([jobType], map: "idx_background_jobs_job_type")
+  @@index([status], map: "idx_background_jobs_status")
+  @@index([scheduledAt], map: "idx_background_jobs_scheduled_at")
+  @@map("background_jobs")
 }
