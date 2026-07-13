@@ -23,10 +23,14 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset",
+    "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:rename-user": "prisma db execute --file prisma/scripts/rename-developer-to-user.sql",
+    "db:format": "prisma format",
+    "db:validate": "prisma validate"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -38,10 +42,12 @@
     "@nestjs/platform-socket.io": "^11.1.27",
     "@nestjs/swagger": "^11.4.5",
     "@nestjs/websockets": "^11.1.27",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
+    "pg": "^8.16.0",
     "prisma": "^7.8.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -55,6 +61,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.0.1",
+    "@types/pg": "^8.15.2",
     "@types/supertest": "^7.0.0",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.0.1",
@@ -68,8 +75,12 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.4",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "jest": {
     "moduleFileExtensions": [
