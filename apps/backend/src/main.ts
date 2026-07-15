@@ -82,16 +82,23 @@ async function bootstrap(): Promise<void> {
       )
       .setVersion('1.0')
       .addBearerAuth()
+      // Only register tags for modules that are actually imported.
+      // Empty placeholder tags hide the fact that no routes exist yet.
       .addTag('health', 'Health checks')
       .addTag('auth', 'Authentication endpoints')
-      .addTag('users', 'User management')
-      .addTag('workspaces', 'Workspace management')
-      .addTag('documents', 'Document management')
-      .addTag('ai', 'AI services')
+      .addTag('users', 'User management (admin)')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
-    SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
+    SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        docExpansion: 'list',
+        filter: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+    });
     logger.log(`Swagger docs: http://localhost:${port}/${apiPrefix}/docs`);
   }
 

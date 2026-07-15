@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import * as argon2 from 'argon2';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   PrismaClient,
@@ -57,16 +58,35 @@ async function main(): Promise<void> {
   }
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
   const workspaceSlug = process.env.SEED_WORKSPACE_SLUG ?? 'default';
+
+  const passwordHash = adminPassword
+    ? await argon2.hash(adminPassword, {
+        type: argon2.argon2id,
+        memoryCost: 19456,
+        timeCost: 2,
+        parallelism: 1,
+      })
+    : undefined;
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: {
+      ...(passwordHash ? { passwordHash } : {}),
+      role: UserRole.ADMIN,
+      status: UserStatus.ACTIVE,
+      emailVerifiedAt: new Date(),
+      deletedAt: null,
+    },
     create: {
       email: adminEmail,
-      firstName: 'Platform',
-      lastName: 'Admin',
-      displayName: 'Platform Admin',
+      passwordHash,
+      firstName: process.env.SEED_ADMIN_FIRST_NAME ?? 'Platform',
+      lastName: process.env.SEED_ADMIN_LAST_NAME ?? 'Admin',
+      displayName:
+        process.env.SEED_ADMIN_DISPLAY_NAME ??
+        `${process.env.SEED_ADMIN_FIRST_NAME ?? 'Platform'} ${process.env.SEED_ADMIN_LAST_NAME ?? 'Admin'}`.trim(),
       role: UserRole.ADMIN,
       status: UserStatus.ACTIVE,
       emailVerifiedAt: new Date(),

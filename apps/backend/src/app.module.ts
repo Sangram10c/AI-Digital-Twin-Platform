@@ -19,6 +19,8 @@ import { JwtConfigModule } from './common/modules/jwt-config.module';
 import { configNamespaces, envValidationSchema } from './config';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
+import { IdentityModule } from './modules/identity/identity.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -74,10 +76,10 @@ import { HealthModule } from './modules/health/health.module';
     DatabaseModule,
     JwtConfigModule,
     HealthModule,
+    IdentityModule,
+    UsersModule,
 
-    // Feature modules — uncomment as implemented (do not add business logic here)
-    // AuthModule,
-    // UsersModule,
+    // Feature modules — uncomment as implemented
     // WorkspacesModule,
     // HealthModule is active above for foundation probes
   ],

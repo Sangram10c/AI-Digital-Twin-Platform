@@ -8,9 +8,11 @@ import {
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { HealthService } from './health.service';
 
 @ApiTags('health')
+@Public()
 @Controller()
 @SkipTransform()
 @SkipThrottle()
