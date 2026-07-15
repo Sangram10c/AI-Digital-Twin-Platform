@@ -1,32 +1,83 @@
+import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import compression from 'compression';
+import helmet from 'helmet';
+import { Logger } from 'nestjs-pino';
+import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { SWAGGER_AUTH_PERSIST_SCRIPT } from './swagger/swagger-auth.persist';
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
-    // Logger will be replaced by Pino in production
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    bufferLogs: true,
   });
 
-  // Global prefix
-  app.setGlobalPrefix(process.env.API_PREFIX || 'api');
+  const configService = app.get(ConfigService);
+  const logger = app.get(Logger);
+  app.useLogger(logger);
 
-  // API Versioning
+  const nodeEnv = configService.get<string>('app.nodeEnv');
+  const apiPrefix = configService.get<string>('app.apiPrefix') ?? 'api';
+  const apiVersion = configService.get<string>('app.apiVersion') ?? 'v1';
+  const port = configService.get<number>('app.port') ?? 4000;
+  const host = configService.get<string>('app.host') ?? '0.0.0.0';
+  const corsOrigin = configService.get<string>('app.corsOrigin');
+  const corsCredentials = configService.get<boolean>('app.corsCredentials');
+  const trustProxy = configService.get<boolean>('app.trustProxy');
+  const bodyLimit = configService.get<string>('app.bodyLimit') ?? '1mb';
+  const isProduction = configService.get<boolean>('app.isProduction');
+
+  if (trustProxy) {
+    const expressApp = app.getHttpAdapter().getInstance() as {
+      set: (key: string, value: unknown) => void;
+    };
+    expressApp.set('trust proxy', 1);
+  }
+
+  // Relax CSP in non-production so Swagger custom scripts can persist JWT auth.
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? undefined
+        : {
+            directives: {
+              defaultSrc: [`'self'`],
+              styleSrc: [`'self'`, `'unsafe-inline'`],
+              scriptSrc: [`'self'`, `'unsafe-inline'`, `'unsafe-eval'`],
+              imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+              connectSrc: [`'self'`],
+              fontSrc: [`'self'`, 'data:'],
+            },
+          },
+    }),
+  );
+  app.use(compression());
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
+
+  app.setGlobalPrefix(apiPrefix, {
+    exclude: ['health', 'ready', 'live'],
+  });
+
   app.enableVersioning({
     type: VersioningType.URI,
-    defaultVersion: '1',
+    defaultVersion: apiVersion.replace(/^v/, ''),
   });
 
-  // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
-    credentials: true,
+    origin: corsOrigin,
+    credentials: corsCredentials,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'X-Request-Id',
+    ],
   });
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -38,33 +89,66 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('AI Digital Twin Platform API')
-    .setDescription(
-      'Enterprise AI Digital Twin Platform - REST API Documentation',
-    )
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Authentication endpoints')
-    .addTag('users', 'User management')
-    .addTag('workspaces', 'Workspace management')
-    .addTag('documents', 'Document management')
-    .addTag('ai', 'AI services')
-    .addTag('health', 'Health checks')
-    .build();
+  app.enableShutdownHooks();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  if (!isProduction) {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('AI Digital Twin Platform API')
+      .setDescription(
+        [
+          'Enterprise AI Digital Twin Platform — REST API Documentation',
+          '',
+          '**Swagger auth tip:** Call `POST /auth/login` once. The access token is applied automatically and kept after page refresh (browser localStorage). Server restart does not clear it; you only need to login again when the JWT expires.',
+        ].join('\n'),
+      )
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description:
+            'JWT access token. After login it is auto-filled and persisted across refresh.',
+          in: 'header',
+        },
+        'JWT',
+      )
+      .addTag('health', 'Health checks')
+      .addTag('auth', 'Authentication endpoints')
+      .addTag('users', 'User management (admin)')
+      .addTag('workspaces', 'Workspace management')
+      .build();
 
-  const port = process.env.BACKEND_PORT || 4000;
-  await app.listen(port);
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
 
-  const logger = new Logger('Bootstrap');
-  logger.log(`🚀 Application is running on: http://localhost:${port}`);
-  logger.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+    SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+      customSiteTitle: 'AI Digital Twin API',
+      customJsStr: SWAGGER_AUTH_PERSIST_SCRIPT,
+      swaggerOptions: {
+        persistAuthorization: true,
+        docExpansion: 'list',
+        filter: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+        tryItOutEnabled: true,
+      },
+    });
+    logger.log(`Swagger docs: http://localhost:${port}/${apiPrefix}/docs`);
+  }
+
+  await app.listen(port, host);
+
+  const versionSegment = apiVersion.replace(/^v/, '');
+  logger.log(`Environment: ${nodeEnv}`);
+  logger.log(
+    `Application running: http://${host}:${port}/${apiPrefix}/v${versionSegment}`,
+  );
+  logger.log(`Health: http://${host}:${port}/health`);
+  logger.log(`Ready:  http://${host}:${port}/ready`);
+  logger.log(`Live:   http://${host}:${port}/live`);
 }
 
-bootstrap().catch((err) => {
-  console.error('Failed to start application:', err);
+bootstrap().catch((error: unknown) => {
+  console.error('Failed to start application:', error);
+  process.exit(1);
 });

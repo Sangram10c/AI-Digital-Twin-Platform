@@ -1,17 +1,21 @@
+import { NotImplementedException } from '@nestjs/common';
+
 /**
  * Hash Utility
  *
- * Password hashing and comparison utilities.
- * Placeholder - will use bcrypt or argon2.
+ * Password hashing placeholder — will use Argon2id during Auth module phase.
+ * Intentionally throws until a secure implementation is wired.
  */
 export class HashUtil {
-  static hash(password: string): Promise<string> {
-    // Will use bcrypt.hash(password, 12)
-    return Promise.resolve(password);
+  static hash(_password: string): Promise<string> {
+    throw new NotImplementedException(
+      'Password hashing is not yet implemented. Use Argon2id during Auth module phase.',
+    );
   }
 
-  static compare(password: string, hash: string): Promise<boolean> {
-    // Will use bcrypt.compare(password, hash)
-    return Promise.resolve(password === hash);
+  static compare(_password: string, _hash: string): Promise<boolean> {
+    throw new NotImplementedException(
+      'Password comparison is not yet implemented. Use Argon2id during Auth module phase.',
+    );
   }
 }
