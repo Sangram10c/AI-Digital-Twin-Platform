@@ -72,7 +72,7 @@
     "@types/compression": "^1.7.5",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.0.1",
+    "@types/node": "^26.1.1",
     "@types/passport-jwt": "4.0.1",
     "@types/pg": "^8.15.2",
     "@types/supertest": "^7.0.0",
