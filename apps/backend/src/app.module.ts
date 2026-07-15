@@ -21,6 +21,7 @@ import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UsersModule } from './modules/users/users.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { UsersModule } from './modules/users/users.module';
     HealthModule,
     IdentityModule,
     UsersModule,
+    WorkspacesModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,

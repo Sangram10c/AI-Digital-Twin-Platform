@@ -70,7 +70,7 @@ export class IdentityController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Logout and revoke the current session' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
   async logout(
@@ -132,7 +132,7 @@ export class IdentityController {
 
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  @ApiBearerAuth()
+  @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Change password for the authenticated user' })
   @ApiResponse({ status: 200, description: 'Password changed' })
   @ApiResponse({ status: 401, description: 'Current password incorrect' })

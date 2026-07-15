@@ -12,7 +12,7 @@ import { ListUsersQueryDto, PaginatedUsersResponseDto } from './dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
-@ApiBearerAuth()
+@ApiBearerAuth('JWT')
 @Controller({ path: 'users', version: '1' })
 @UseGuards(RolesGuard)
 export class UsersController {

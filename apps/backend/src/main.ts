@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { json, urlencoded } from 'express';
 import { AppModule } from './app.module';
+import { SWAGGER_AUTH_PERSIST_SCRIPT } from './swagger/swagger-auth.persist';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -35,7 +36,23 @@ async function bootstrap(): Promise<void> {
     expressApp.set('trust proxy', 1);
   }
 
-  app.use(helmet());
+  // Relax CSP in non-production so Swagger custom scripts can persist JWT auth.
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? undefined
+        : {
+            directives: {
+              defaultSrc: [`'self'`],
+              styleSrc: [`'self'`, `'unsafe-inline'`],
+              scriptSrc: [`'self'`, `'unsafe-inline'`, `'unsafe-eval'`],
+              imgSrc: [`'self'`, 'data:', 'validator.swagger.io'],
+              connectSrc: [`'self'`],
+              fontSrc: [`'self'`, 'data:'],
+            },
+          },
+    }),
+  );
   app.use(compression());
   app.use(json({ limit: bodyLimit }));
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
@@ -78,25 +95,42 @@ async function bootstrap(): Promise<void> {
     const swaggerConfig = new DocumentBuilder()
       .setTitle('AI Digital Twin Platform API')
       .setDescription(
-        'Enterprise AI Digital Twin Platform — REST API Documentation',
+        [
+          'Enterprise AI Digital Twin Platform — REST API Documentation',
+          '',
+          '**Swagger auth tip:** Call `POST /auth/login` once. The access token is applied automatically and kept after page refresh (browser localStorage). Server restart does not clear it; you only need to login again when the JWT expires.',
+        ].join('\n'),
       )
       .setVersion('1.0')
-      .addBearerAuth()
-      // Only register tags for modules that are actually imported.
-      // Empty placeholder tags hide the fact that no routes exist yet.
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description:
+            'JWT access token. After login it is auto-filled and persisted across refresh.',
+          in: 'header',
+        },
+        'JWT',
+      )
       .addTag('health', 'Health checks')
       .addTag('auth', 'Authentication endpoints')
       .addTag('users', 'User management (admin)')
+      .addTag('workspaces', 'Workspace management')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
+
     SwaggerModule.setup(`${apiPrefix}/docs`, app, document, {
+      customSiteTitle: 'AI Digital Twin API',
+      customJsStr: SWAGGER_AUTH_PERSIST_SCRIPT,
       swaggerOptions: {
         persistAuthorization: true,
         docExpansion: 'list',
         filter: true,
         tagsSorter: 'alpha',
         operationsSorter: 'alpha',
+        tryItOutEnabled: true,
       },
     });
     logger.log(`Swagger docs: http://localhost:${port}/${apiPrefix}/docs`);
