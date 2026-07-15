@@ -1,18 +1,21 @@
-import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  NotImplementedException,
+} from '@nestjs/common';
 
 /**
- * JWT Auth Guard (Placeholder)
+ * JWT Auth Guard (placeholder)
  *
- * Validates JWT token from Authorization header.
- * Will be implemented with @nestjs/passport.
+ * Will be implemented with PassportStrategy during the Auth module phase.
+ * Intentionally rejects all requests until real JWT verification is added.
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    // Placeholder - will use PassportStrategy
-    const request = context
-      .switchToHttp()
-      .getRequest<{ headers: Record<string, string | undefined> }>();
-    return !!request.headers.authorization;
+  canActivate(_context: ExecutionContext): boolean {
+    throw new NotImplementedException(
+      'JWT authentication is not yet implemented. Enable during Auth module phase.',
+    );
   }
 }
