@@ -65,7 +65,9 @@ async function main(): Promise<void> {
     },
   });
 
-  console.log(`Admin account ready: ${user.email} (${user.id}) role=${user.role}`);
+  console.log(
+    `Admin account ready: ${user.email} (${user.id}) role=${user.role}`,
+  );
 }
 
 main()
