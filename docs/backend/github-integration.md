@@ -2,7 +2,18 @@
 
 ## Overview
 
-The GitHub Integration module lets users connect multiple GitHub accounts after login, then create workspaces linked to those accounts. Repository sync, webhooks, and code ingestion are out of scope for this phase.
+The GitHub Integration module lets platform users connect one or more GitHub accounts after login, then link those accounts to workspaces. Tokens are encrypted at rest. **Webhooks** (near real-time incremental sync) are implemented in a sibling module — see [webhook-processing.md](./webhook-processing.md).
+
+## Status
+
+| Capability                            | Status                                           |
+| ------------------------------------- | ------------------------------------------------ |
+| OAuth connect (multi-account)         | Complete                                         |
+| Workspace linking via `githubTokenId` | Complete                                         |
+| Token encryption (AES-256-GCM)        | Complete                                         |
+| Audit logging                         | Complete                                         |
+| Webhook ingestion + BullMQ            | Complete (separate module)                       |
+| Full repository crawl / read APIs     | Not on this branch (`repository` module missing) |
 
 ## User Flow (Primary)
 
@@ -12,9 +23,8 @@ The GitHub Integration module lets users connect multiple GitHub accounts after 
 3. Authorize on GitHub      (browser — open authorizationUrl from response)
 4. List connected accounts  GET  /api/v1/github/accounts
 5. Create workspace         POST /api/v1/workspaces  { name, githubTokenId }
+6. (Optional) Webhooks      Configure GitHub → POST /api/v1/webhooks/github?...
 ```
-
-Repeat steps 2–5 for additional GitHub accounts and workspaces.
 
 ### Flowchart
 
@@ -46,16 +56,11 @@ flowchart TD
   R --> S[POST /workspaces<br/>name + githubTokenId]
   S --> T[Create workspace]
   T --> U[Create connected_accounts row<br/>link workspace ↔ GitHub]
-  U --> V([Workspace ready on that GitHub account])
+  U --> V([Workspace ready])
 
-  R --> W[Connect another GitHub account]
-  W --> D
-
-  R --> X[DELETE /github/accounts/oauthTokenId]
-  X --> Y[Disconnect all workspace links<br/>Delete oauth_tokens row]
-
-  U --> Z[DELETE /github/disconnect<br/>workspaceId + accountId]
-  Z --> AA[Unlink from workspace only<br/>Keep user GitHub token]
+  V --> W[Configure GitHub webhook]
+  W --> X[POST /webhooks/github]
+  X --> Y[BullMQ → incremental DB upsert]
 ```
 
 ### Platform email vs GitHub email
@@ -69,66 +74,74 @@ Platform login email and GitHub account email **do not need to match**.
 
 Accounts are linked by platform `user.id` + GitHub `provider_account_id`, not by email.
 
+### Success redirect to localhost:3000
+
+After OAuth, the backend redirects to `GITHUB_OAUTH_SUCCESS_REDIRECT` (default frontend). If the frontend is not running you see `ERR_CONNECTION_REFUSED` — the GitHub connection still succeeded. Verify with `GET /github/accounts`.
+
 ## Architecture
 
 ```
 GithubController
-  ├── GithubService            # OAuth, user accounts, workspace linking
-  ├── GithubApiClient          # GitHub OAuth + profile HTTP calls
-  ├── GithubOAuthStateService  # Signed state (CSRF protection)
+  ├── GithubService                 # OAuth, user accounts, workspace linking
+  ├── GithubApiClient               # GitHub OAuth + profile HTTP calls
+  ├── GithubOAuthStateService       # Signed state (CSRF protection)
   ├── OAuthTokenEncryptionService
-  ├── OAuthTokenStorageService # Decrypt + future refresh hook
-  └── GithubAuditService       # AuditLog persistence
+  ├── OAuthTokenStorageService      # Decrypt access tokens
+  └── GithubAuditService            # AuditLog persistence
 ```
+
+**Code:** `apps/backend/src/modules/github/`
+
+## External GitHub APIs used (free)
+
+| GitHub URL                                    | Purpose             |
+| --------------------------------------------- | ------------------- |
+| `https://github.com/login/oauth/authorize`    | User consent        |
+| `https://github.com/login/oauth/access_token` | Code → access token |
+| `https://api.github.com/user`                 | Profile             |
+| `https://api.github.com/user/emails`          | Emails              |
+
+These are **free** GitHub OAuth/REST endpoints (rate-limited). Configured in `src/config/oauth.config.ts` and called from `services/github-api.client.ts`.
+
+Official docs: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps
 
 ## Database Relations
 
 ```
 User 1──* OAuthToken (provider=GITHUB, unique per GitHub account)
 User 1──* ConnectedAccount
-Workspace 1──* ConnectedAccount *──* OAuthToken (shared across workspaces)
+Workspace 1──* ConnectedAccount *──o OAuthToken (shared across workspaces)
 GitProvider (GITHUB) 1──* ConnectedAccount
 ```
 
 ### Key Constraints
 
 - `OAuthToken`: unique `(userId, provider, providerAccountId)` — multiple GitHub accounts per user
-- `ConnectedAccount`: unique `(workspaceId, gitProviderId, providerAccountId)` — one GitHub identity per workspace
+- `ConnectedAccount`: unique `(workspaceId, gitProviderId, providerAccountId)`
 - Same GitHub account can power multiple workspaces (shared `oauthTokenId`)
+- `ConnectedAccount.status` must be **`ACTIVE`** for sync/webhooks to use it
 
-## OAuth Flow
+### ID cheat sheet
 
-```mermaid
-sequenceDiagram
-  participant U as User
-  participant API as Backend
-  participant GH as GitHub
-
-  U->>API: Login (JWT)
-  U->>API: GET /github/connect?returnUrl=true
-  API->>API: Signed state (userId only)
-  API-->>U: authorizationUrl
-  U->>GH: Authorize app
-  GH->>API: GET /github/callback?code&state
-  API->>API: Upsert OAuthToken (encrypted)
-  API-->>U: Redirect ?status=connected&githubTokenId=...
-  U->>API: POST /workspaces { githubTokenId }
-  API->>API: Create workspace + ConnectedAccount
-```
+| ID                   | Source                                    | Use                       |
+| -------------------- | ----------------------------------------- | ------------------------- |
+| `githubTokenId`      | `GET /github/accounts` → `id`             | Create workspace / OAuth  |
+| `connectedAccountId` | `GET /github/account?workspaceId=` → `id` | Webhook URL / sync filter |
+| `workspaceId`        | Workspaces API                            | Scoped APIs               |
 
 ## API Endpoints
 
 Base path: `/api/v1/github`
 
-| Method   | Path                                   | Auth            | Description                                           |
-| -------- | -------------------------------------- | --------------- | ----------------------------------------------------- |
-| `GET`    | `/connect?returnUrl=true`              | JWT             | Connect GitHub at user level                          |
-| `GET`    | `/connect?workspaceId=&returnUrl=true` | JWT             | Connect and link to workspace (optional)              |
-| `GET`    | `/callback`                            | Public          | OAuth callback                                        |
-| `GET`    | `/accounts`                            | JWT             | List user's GitHub accounts + linked workspaces       |
-| `DELETE` | `/accounts/:oauthTokenId`              | JWT             | Remove GitHub account from user (all workspace links) |
-| `GET`    | `/account?workspaceId=`                | JWT + workspace | List GitHub accounts in a workspace                   |
-| `DELETE` | `/disconnect?workspaceId=&accountId=`  | JWT + workspace | Unlink from workspace only                            |
+| Method   | Path                                   | Auth            | Description                                      |
+| -------- | -------------------------------------- | --------------- | ------------------------------------------------ |
+| `GET`    | `/connect?returnUrl=true`              | JWT             | User-level connect; returns `authorizationUrl`   |
+| `GET`    | `/connect?workspaceId=&returnUrl=true` | JWT             | Connect and link workspace                       |
+| `GET`    | `/callback`                            | Public          | OAuth callback                                   |
+| `GET`    | `/accounts`                            | JWT             | List user's GitHub accounts                      |
+| `DELETE` | `/accounts/:oauthTokenId`              | JWT             | Remove GitHub from user (disconnects workspaces) |
+| `GET`    | `/account?workspaceId=`                | JWT + workspace | List workspace-linked accounts                   |
+| `DELETE` | `/disconnect?workspaceId=&accountId=`  | JWT + workspace | Unlink workspace only                            |
 
 ### Create workspace with GitHub
 
@@ -147,16 +160,30 @@ Content-Type: application/json
 
 Use `returnUrl=true` on `/github/connect` — Swagger cannot follow redirects to GitHub.
 
+## Environment
+
+```env
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GITHUB_CALLBACK_URL=http://localhost:4000/api/v1/github/callback
+GITHUB_OAUTH_SCOPES=read:user user:email
+GITHUB_OAUTH_SUCCESS_REDIRECT=http://localhost:3000/settings/integrations/github
+GITHUB_OAUTH_ERROR_REDIRECT=http://localhost:3000/settings/integrations/github
+GITHUB_OAUTH_STATE_TTL_SECONDS=600
+GITHUB_WEBHOOK_SECRET=...   # used by webhook module
+OAUTH_TOKEN_ENCRYPTION_KEY=...
+```
+
 ## Migration
 
-After pulling these changes, run:
+Local preferred:
 
 ```bash
 cd apps/backend
-npm run db:migrate
+npx prisma db push
 ```
 
-Migration `github_multi_account` enables multiple GitHub accounts per user.
+Migration folder: `prisma/migrations/github_multi_account/` (multi-account unique constraint).
 
 ## Security
 
@@ -165,6 +192,12 @@ Migration `github_multi_account` enables multiple GitHub accounts per user.
 - Tokens never returned from APIs
 - Audit logging on connect/disconnect
 
-## Out of Scope
+## Related
 
-Repository sync, webhooks, commits, branches, pull requests, issues.
+- [Webhook Processing](./webhook-processing.md)
+- [Workspace Module](./workspace-module.md)
+- [Identity Module](./identity-module.md)
+- [Design docs — GitHub Integration](../11-github-integration/README.md)
+- [COMMANDS.md](../../apps/backend/COMMANDS.md)
+
+Last updated: 2026-07-16

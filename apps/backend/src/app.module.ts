@@ -23,6 +23,7 @@ import { IdentityModule } from './modules/identity/identity.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { GithubModule } from './modules/github/github.module';
+import { WebhookModule } from './modules/webhook/webhook.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { GithubModule } from './modules/github/github.module';
     UsersModule,
     WorkspacesModule,
     GithubModule,
+    WebhookModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,

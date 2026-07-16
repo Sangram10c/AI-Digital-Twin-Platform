@@ -57,16 +57,20 @@ REST API design standards, versioning, authentication headers, and shared respon
 
 ## Endpoints Overview
 
-| Method | Endpoint       | Description        |
-| ------ | -------------- | ------------------ |
-| POST   | /auth/login    | User login         |
-| POST   | /auth/register | User registration  |
-| GET    | /auth/profile  | Get current user   |
-| GET    | /users         | List users         |
-| GET    | /workspaces    | List workspaces    |
-| POST   | /documents     | Create document    |
-| POST   | /ai/chat       | AI chat completion |
-| GET    | /health        | Health check       |
+| Method | Endpoint         | Description           |
+| ------ | ---------------- | --------------------- |
+| POST   | /auth/login      | User login            |
+| POST   | /auth/register   | User registration     |
+| GET    | /auth/profile    | Get current user      |
+| GET    | /users           | List users            |
+| GET    | /workspaces      | List workspaces       |
+| GET    | /github/connect  | Start GitHub OAuth    |
+| GET    | /github/accounts | List GitHub accounts  |
+| POST   | /webhooks/github | GitHub webhook ingest |
+| GET    | /webhooks/events | List webhook events   |
+| GET    | /health          | Health check          |
+
+See [github.md](./github.md) for full GitHub/webhook API tables.
 
 ## HTTP Status Codes
 
