@@ -58,6 +58,22 @@ export const envValidationSchema = Joi.object({
   GITHUB_CLIENT_ID: Joi.string().allow('').optional(),
   GITHUB_CLIENT_SECRET: Joi.string().allow('').optional(),
   GITHUB_CALLBACK_URL: Joi.string().uri().optional(),
+  GITHUB_OAUTH_SCOPES: Joi.string().optional(),
+  GITHUB_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+  GITHUB_OAUTH_SUCCESS_REDIRECT: Joi.string().uri().optional(),
+  GITHUB_OAUTH_ERROR_REDIRECT: Joi.string().uri().optional(),
+  GITHUB_OAUTH_STATE_TTL_SECONDS: Joi.number()
+    .integer()
+    .positive()
+    .default(600),
+  OAUTH_TOKEN_ENCRYPTION_KEY: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(32).required().messages({
+      'any.required':
+        'OAUTH_TOKEN_ENCRYPTION_KEY is required in production (min 32 chars)',
+    }),
+    otherwise: Joi.string().default('dev-oauth-token-encryption-key-32b'),
+  }),
 
   // AI (optional until AI module is implemented)
   AI_DEFAULT_PROVIDER: Joi.string()

@@ -35,6 +35,15 @@ export class CreateWorkspaceDto {
   @IsString()
   @MaxLength(2000)
   description?: string;
+
+  @ApiPropertyOptional({
+    example: '660e8400-e29b-41d4-a716-446655440001',
+    description:
+      'GitHub OAuth token ID from GET /github/accounts — links the new workspace to that GitHub account',
+  })
+  @IsOptional()
+  @IsUUID()
+  githubTokenId?: string;
 }
 
 export class UpdateWorkspaceDto {

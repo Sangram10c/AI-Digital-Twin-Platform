@@ -37,11 +37,15 @@ describe('WorkspacesService', () => {
     $transaction: jest.fn(),
   };
 
+  const githubService = {
+    linkTokenToWorkspace: jest.fn(),
+  };
+
   let service: WorkspacesService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new WorkspacesService(prisma as never);
+    service = new WorkspacesService(prisma as never, githubService as never);
     prisma.$transaction.mockImplementation(
       async (callback: (tx: typeof prisma) => Promise<unknown>) =>
         callback(prisma),

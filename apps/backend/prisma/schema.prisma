@@ -239,10 +239,10 @@ model OAuthToken {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  connectedAccount ConnectedAccount?
+  connectedAccounts ConnectedAccount[]
 
   @@unique([provider, providerAccountId], map: "uq_oauth_tokens_provider_account")
-  @@unique([userId, provider], map: "uq_oauth_tokens_user_provider")
+  @@unique([userId, provider, providerAccountId], map: "uq_oauth_tokens_user_provider_account")
   @@index([userId], map: "idx_oauth_tokens_user_id")
   @@index([accessTokenExpiresAt], map: "idx_oauth_tokens_access_expires_at")
   @@map("oauth_tokens")
@@ -425,7 +425,7 @@ model ConnectedAccount {
   gitProviderId String @map("git_provider_id") @db.Uuid
 
   // Optional link to identity OAuth credentials used for this connection.
-  oauthTokenId String? @unique @map("oauth_token_id") @db.Uuid
+  oauthTokenId String? @map("oauth_token_id") @db.Uuid
 
   providerAccountId  String  @map("provider_account_id") @db.VarChar(255)
   providerUsername   String  @map("provider_username") @db.VarChar(255)

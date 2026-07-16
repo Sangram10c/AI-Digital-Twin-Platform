@@ -117,6 +117,7 @@ async function bootstrap(): Promise<void> {
       .addTag('auth', 'Authentication endpoints')
       .addTag('users', 'User management (admin)')
       .addTag('workspaces', 'Workspace management')
+      .addTag('github', 'GitHub OAuth integration')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
