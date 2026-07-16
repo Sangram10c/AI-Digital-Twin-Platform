@@ -12,6 +12,7 @@ import {
   WorkspaceStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { GithubService } from '../github/github.service';
 import {
   CreateWorkspaceDto,
   InviteMemberDto,
@@ -44,7 +45,10 @@ const workspaceInclude = {
 
 @Injectable()
 export class WorkspacesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly githubService: GithubService,
+  ) {}
 
   async create(userId: string, dto: CreateWorkspaceDto) {
     await this.assertUniqueWorkspaceName(dto.name);
@@ -85,6 +89,14 @@ export class WorkspacesService {
 
       return created;
     });
+
+    if (dto.githubTokenId) {
+      await this.githubService.linkTokenToWorkspace(
+        userId,
+        workspace.id,
+        dto.githubTokenId,
+      );
+    }
 
     return this.toWorkspaceResponse(workspace);
   }

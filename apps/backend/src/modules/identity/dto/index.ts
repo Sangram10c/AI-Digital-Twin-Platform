@@ -41,11 +41,11 @@ export class RegisterDeveloperDto {
 }
 
 export class LoginDeveloperDto {
-  @ApiProperty({ example: 'jane@example.com' })
+  @ApiProperty({ example: 'chougulesangram3@gmail.com' })
   @IsEmail()
   email!: string;
 
-  @ApiProperty({ example: 'Str0ng!Pass' })
+  @ApiProperty({ example: 'Sangram@2770' })
   @IsString()
   @MinLength(8)
   password!: string;

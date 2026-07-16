@@ -22,15 +22,18 @@ import { HealthModule } from './modules/health/health.module';
 import { IdentityModule } from './modules/identity/identity.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
+import { GithubModule } from './modules/github/github.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: [
-        path.resolve(process.cwd(), '../../.env'),
-        path.resolve(process.cwd(), '.env'),
+        // Nest merges with Object.assign(parsedFile, accumulated) per file in order.
+        // Files listed FIRST win on duplicate keys.
         path.resolve(process.cwd(), '.env.local'),
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), '../../.env'),
       ],
       load: configNamespaces,
       validationSchema: envValidationSchema,
@@ -80,6 +83,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     IdentityModule,
     UsersModule,
     WorkspacesModule,
+    GithubModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,
