@@ -12,6 +12,7 @@ import { SWAGGER_AUTH_PERSIST_SCRIPT } from './swagger/swagger-auth.persist';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
+    rawBody: true,
   });
 
   const configService = app.get(ConfigService);
@@ -54,7 +55,14 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.use(compression());
-  app.use(json({ limit: bodyLimit }));
+  app.use(
+    json({
+      limit: bodyLimit,
+      verify: (req, _res, buf) => {
+        (req as { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(urlencoded({ extended: true, limit: bodyLimit }));
 
   app.setGlobalPrefix(apiPrefix, {
@@ -75,6 +83,10 @@ async function bootstrap(): Promise<void> {
       'Authorization',
       'X-Requested-With',
       'X-Request-Id',
+      'X-Hub-Signature-256',
+      'X-GitHub-Event',
+      'X-GitHub-Delivery',
+      'X-GitHub-Hook-ID',
     ],
   });
 
@@ -118,6 +130,7 @@ async function bootstrap(): Promise<void> {
       .addTag('users', 'User management (admin)')
       .addTag('workspaces', 'Workspace management')
       .addTag('github', 'GitHub OAuth integration')
+      .addTag('webhooks', 'GitHub webhook ingestion and monitoring')
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);

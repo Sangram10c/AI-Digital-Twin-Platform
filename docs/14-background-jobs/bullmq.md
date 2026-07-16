@@ -1,29 +1,59 @@
-# Bullmq
+# BullMQ
 
 ## Purpose
 
-<!-- Describe the purpose of this document. -->
+Document how the backend uses BullMQ + Redis for asynchronous work.
 
 ## Scope
 
-<!-- Define the boundaries and context of this document. -->
+Current production use on this branch: **GitHub webhook processing queues**.  
+Planned/other: full repository crawl workers when `repository` module is restored.
 
 ## Overview
 
-<!-- Provide a high-level summary. -->
+- Library: `bullmq` + `@nestjs/bullmq`
+- Config: `apps/backend/src/config/bullmq.config.ts` (`REDIS_URL`, `QUEUE_PREFIX`)
+- Redis must be **≥ 5.0**
 
-## Responsibilities
+## Webhook queues (live)
 
-<!-- List key responsibilities, components, or actors. -->
+Registered in `src/modules/webhook/webhook.module.ts`:
+
+| Queue                     | Role                     |
+| ------------------------- | ------------------------ |
+| `webhook-processing`      | Route delivery           |
+| `webhook-commit-sync`     | Commits/branches         |
+| `webhook-pr-sync`         | Pull requests            |
+| `webhook-issue-sync`      | Issues                   |
+| `webhook-release-sync`    | Releases                 |
+| `webhook-repository-sync` | Repo metadata            |
+| `webhook-statistics`      | Stars/watchers           |
+| `webhook-dead-letter`     | Failed after max retries |
+
+Defaults: 5 attempts, exponential backoff, concurrency 5 on domain workers.
+
+## Local Redis
+
+See `apps/backend/COMMANDS.md` (often Redis 5 on port **6380** on Windows without Docker).
+
+```env
+REDIS_URL=redis://localhost:6380/0
+QUEUE_PREFIX=ai-twin
+```
 
 ## Design
 
-<!-- Document design decisions, patterns, and structure. -->
+- Controllers enqueue only; workers do DB writes
+- Job ids keyed by GitHub delivery id for idempotency
+- Dead-letter queue for poison messages
 
 ## Future Improvements
 
-<!-- Note planned enhancements or open questions. -->
+- Shared BullMQ root module for repository + webhook
+- Metrics exporters (queue depth, failure rate)
 
 ## References
 
-<!-- Link to related documents, standards, or external resources. -->
+- [Webhook processing](../backend/webhook-processing.md)
+- [Background jobs index](./README.md)
+- https://docs.bullmq.io/

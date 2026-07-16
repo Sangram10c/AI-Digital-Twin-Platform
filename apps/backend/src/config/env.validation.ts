@@ -59,7 +59,14 @@ export const envValidationSchema = Joi.object({
   GITHUB_CLIENT_SECRET: Joi.string().allow('').optional(),
   GITHUB_CALLBACK_URL: Joi.string().uri().optional(),
   GITHUB_OAUTH_SCOPES: Joi.string().optional(),
-  GITHUB_WEBHOOK_SECRET: Joi.string().allow('').optional(),
+  GITHUB_WEBHOOK_SECRET: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().min(16).required().messages({
+      'any.required':
+        'GITHUB_WEBHOOK_SECRET is required in production (min 16 chars)',
+    }),
+    otherwise: Joi.string().allow('').optional(),
+  }),
   GITHUB_OAUTH_SUCCESS_REDIRECT: Joi.string().uri().optional(),
   GITHUB_OAUTH_ERROR_REDIRECT: Joi.string().uri().optional(),
   GITHUB_OAUTH_STATE_TTL_SECONDS: Joi.number()

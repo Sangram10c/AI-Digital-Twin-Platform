@@ -198,34 +198,43 @@ GET /api/v1/github/account?workspaceId=<uuid>
 
 `status` must be **`ACTIVE`** (not `DISCONNECTED`).
 
-### Sync all repos
+### Full repository sync / list APIs
+
+`POST /repositories/sync` and `GET /repositories` are **not available on this branch** (repository module missing).  
+Near real-time updates use **webhooks** (section below). Schema tables still receive webhook upserts when a matching repository row exists.
+
+See `docs/11-github-integration/repository-sync.md`.
+
+---
+
+## GitHub webhooks
+
+Ingest URL (public, signature required):
 
 ```
-POST /api/v1/repositories/sync?workspaceId=<uuid>
+POST http://localhost:4000/api/v1/webhooks/github?workspaceId=<uuid>&connectedAccountId=<uuid>
 ```
 
-Leave `connectedAccountId` empty unless you pass the **connected account** id from `/github/account` (not `githubTokenId`).
+Headers:
 
-With Redis up, expect a fast response:
+- `X-GitHub-Event`
+- `X-GitHub-Delivery`
+- `X-Hub-Signature-256`
 
-```json
-{ "queued": true, "jobId": "...", "syncHistoryId": "..." }
+Env:
+
+```env
+GITHUB_WEBHOOK_SECRET=dev-github-webhook-secret-change-me
 ```
 
-Without Redis, sync runs **inline** and Swagger can stay on LOADING for a long time.
-
-### Sync one repo
-
-1. `GET /api/v1/repositories?workspaceId=<uuid>` → copy repository `id`
-2. `POST /api/v1/repositories/{id}/sync`
-
-### Inspect data
+Monitoring (JWT):
 
 ```
-GET /api/v1/repositories/{id}
-GET /api/v1/repositories/{id}/commits
-GET /api/v1/repositories/{id}/branches
+GET /api/v1/webhooks/events?workspaceId=<uuid>
+GET /api/v1/webhooks/statistics?workspaceId=<uuid>
 ```
+
+See `docs/backend/webhook-processing.md`.
 
 ### ID cheat sheet
 
@@ -259,6 +268,7 @@ GITHUB_CLIENT_SECRET=...
 GITHUB_CALLBACK_URL=http://localhost:4000/api/v1/github/callback
 GITHUB_OAUTH_SUCCESS_REDIRECT=http://localhost:3000/settings/integrations/github
 GITHUB_OAUTH_ERROR_REDIRECT=http://localhost:3000/settings/integrations/github
+GITHUB_WEBHOOK_SECRET=dev-github-webhook-secret-change-me
 OAUTH_TOKEN_ENCRYPTION_KEY=...
 ```
 
@@ -266,8 +276,11 @@ OAUTH_TOKEN_ENCRYPTION_KEY=...
 
 ## Related docs
 
+- `docs/backend/README.md` — module index
 - `docs/backend/github-integration.md`
-- `docs/backend/repository-sync.md`
+- `docs/backend/webhook-processing.md`
+- `docs/11-github-integration/README.md`
+- `docs/09-api-design/github.md`
 - `docs/backend/identity-module.md`
 - `docs/backend/workspace-module.md`
 - `docs/backend/backend-foundation.md`

@@ -19,6 +19,6 @@ import { GithubWorkspaceGuard } from './guards/github-workspace.guard';
     OAuthTokenStorageService,
     GithubWorkspaceGuard,
   ],
-  exports: [GithubService],
+  exports: [GithubService, GithubWorkspaceGuard],
 })
 export class GithubModule {}
