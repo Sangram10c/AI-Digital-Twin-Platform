@@ -1,8 +1,11 @@
 import type { NextConfig } from 'next';
+import path from 'path';
 
 const nextConfig: NextConfig = {
   // Enable standalone output for Docker builds
   output: 'standalone',
+  // Monorepo: include files outside apps/frontend in the trace
+  outputFileTracingRoot: path.join(__dirname, '../..'),
 
   // Image optimization
   images: {
