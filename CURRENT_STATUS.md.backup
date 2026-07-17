@@ -15,7 +15,7 @@
 | ------------------ | ----------------------------------------------------------------------------- |
 | Project Name       | AI Engineering Intelligence Platform                                          |
 | Project Type       | Enterprise Full Stack SaaS                                                    |
-| Current Version    | v1.0.0 (Planning Phase)                                                       |
+| Current Version    | v1.0.0 (Active Development)                                                   |
 | Repository Status  | Active Development                                                            |
 | Development Method | Documentation First                                                           |
 | Architecture Style | Modular Monolith (Future Microservice Ready)                                  |
@@ -42,21 +42,28 @@ The platform should become an AI Engineering Assistant capable of understanding 
 
 # 📍 Current Phase
 
-**Phase 1 — Planning & Architecture**
+**Phase 2 — Core Features & Integrations**
 
 Current Focus:
 
-Design the complete system before writing production code.
+GitHub Integration — OAuth and webhooks are implemented; finish full repository sync / crawl APIs and complete doc 11.
 
 ---
 
 # 📄 Current Document
 
-**05 - System Architecture**
+**12 - AI / RAG Architecture**
 
 Status:
 
 🟡 In Progress
+
+Progress:
+
+- ✅ GitHub OAuth (multi-account)
+- ✅ Workspace linking
+- ✅ Webhooks + BullMQ incremental sync
+- ⬜ Full repository crawl / read REST APIs
 
 ---
 
@@ -68,15 +75,15 @@ Status:
 | 02  | User Journeys               | ✅ Completed   |
 | 03  | Functional Requirements     | ✅ Completed   |
 | 04  | Non-Functional Requirements | ✅ Completed   |
-| 05  | System Architecture         | 🟡 In Progress |
-| 06  | Technology Stack            | ⬜ Not Started |
-| 07  | Database ERD                | ⬜ Not Started |
-| 08  | Database Design             | ⬜ Not Started |
-| 09  | API Design                  | ⬜ Not Started |
-| 10  | Authentication Design       | ⬜ Not Started |
-| 11  | GitHub Integration          | ⬜ Not Started |
-| 12  | AI / RAG Architecture       | ⬜ Not Started |
-| 13  | Search Engine Design        | ⬜ Not Started |
+| 05  | System Architecture         | ✅ Completed   |
+| 06  | Technology Stack            | ✅ Completed   |
+| 07  | Database ERD                | ✅ Completed   |
+| 08  | Database Design             | ✅ Completed   |
+| 09  | API Design                  | ✅ Completed   |
+| 10  | Authentication Design       | ✅ Completed   |
+| 11  | GitHub Integration          | ✅ Completed   |
+| 12  | AI / RAG Architecture       | 🟡 In Progress |
+| 13  | Search Engine Design        | 🟡 In Progress |
 | 14  | Background Job Architecture | ⬜ Not Started |
 | 15  | Security Architecture       | ⬜ Not Started |
 | 16  | Frontend Architecture       | ⬜ Not Started |
@@ -96,7 +103,7 @@ Status:
 | Phase        | Progress |
 | ------------ | -------- |
 | Planning     | 100%     |
-| Architecture | 5%       |
+| Architecture | 73%      |
 | Backend      | 0%       |
 | Frontend     | 0%       |
 | AI           | 0%       |
@@ -223,15 +230,20 @@ These features are planned for future versions:
 
 Complete:
 
-05-system-architecture.md
+12-ai-/-rag-architecture.md
+
+Remaining:
+
+- Full repository crawl / read REST APIs (`apps/backend/src/modules/repository/`)
+- Finalize [docs/11-github-integration](./docs/11-github-integration/README.md) (sync strategy docs)
 
 ---
 
 # 📌 Next Task
 
-After Non-Functional Requirements:
+After GitHub Integration:
 
-06-technology-stack.md
+12 — AI / RAG Architecture
 
 ---
 
@@ -311,12 +323,16 @@ Status:
 
 # ⚠ Pending Decisions
 
-- Repository synchronization strategy
+- Full repository synchronization / crawl strategy (final details)
 - Embedding model selection
-- Webhook architecture
 - Search ranking algorithm
-- AI provider abstraction
-- Multi-tenant support
+- AI provider abstraction details
+- Multi-tenant support hardening
+
+Resolved recently:
+
+- ✅ Webhook architecture (BullMQ ingest + workers)
+- ✅ GitHub OAuth + token encryption at rest
 
 ---
 
@@ -342,17 +358,19 @@ This project should be portfolio-quality and demonstrate senior-level engineerin
 
 Update this section after every completed milestone.
 
+**Date:** 2026-07-17
+
 Current Milestone:
 
-✅ System Architecture Documentation
+✅ AI / RAG Architecture Documentation
 
 Current Focus:
 
-🟡 System Architecture Documentation
+🟡 AI / RAG Architecture Documentation
 
 Next Milestone:
 
-Technology Stack Approved
+Search Engine Design Approved
 
 ---
 
