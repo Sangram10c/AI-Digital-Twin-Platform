@@ -1,230 +1,306 @@
 <div align="center">
 
-# 🤖 AI Digital Twin Platform
+# AI Digital Twin Platform
 
-**Enterprise-grade AI Digital Twin Platform for building intelligent knowledge assistants.**
+**Enterprise AI engineering intelligence — ask natural-language questions about your repositories, commits, PRs, and docs.**
 
-[![CI](https://github.com/your-org/ai-digital-twin/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/ai-digital-twin/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/Sangram10c/AI-Digital-Twin-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/Sangram10c/AI-Digital-Twin-Platform/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11.x-red.svg)](https://nestjs.com/)
-[![Next.js](https://img.shields.io/badge/Next.js-Latest-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 
 </div>
 
 ---
 
-## 📋 Overview
+## Overview
 
-The AI Digital Twin Platform enables organizations to create intelligent digital twins that learn from documents, code, and knowledge bases. Powered by a multi-provider AI architecture supporting OpenAI, Anthropic, Google Gemini, and Ollama.
+The AI Digital Twin Platform turns engineering history into a searchable, AI-queryable knowledge base.
 
-### Key Features
+Instead of hunting across GitHub, docs, pull requests, and commits, developers ask questions such as:
 
-- 🧠 **Multi-Provider AI** — Switch between OpenAI, Anthropic, Gemini, and Ollama
-- 📄 **RAG Pipeline** — Retrieval-Augmented Generation for accurate AI responses
-- 🔍 **Vector Search** — pgvector-powered semantic search
-- 🏢 **Multi-Tenant** — Organizations, workspaces, and RBAC
-- 🔐 **Enterprise Auth** — JWT + Google OAuth + GitHub OAuth
-- ⚡ **Real-Time** — WebSocket-powered live updates
-- 🖥️ **VS Code Extension** — Deep IDE integration
-- 📊 **Analytics** — Usage tracking and insights
+- Which commit introduced JWT authentication?
+- Which branch added the payment gateway?
+- Who approved this pull request?
+- Why was this API changed?
+- Summarize everything completed in Sprint 12.
 
----
+**MVP focus (v1):** GitHub as the primary knowledge source — OAuth, repository sync, webhooks, semantic search, and AI chat over engineering history. Bitbucket, Slack, Jira, and similar sources are planned for later versions.
 
-## 🏗️ Architecture
+### Key capabilities
 
-```
-┌─────────────────────────────────────────────────────┐
-│                    Client Layer                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
-│  │   Next.js    │  │  VS Code     │  │  Mobile   │ │
-│  │   Frontend   │  │  Extension   │  │  (Future) │ │
-│  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘ │
-└─────────┼──────────────────┼───────────────┼────────┘
-          │                  │               │
-┌─────────┼──────────────────┼───────────────┼────────┐
-│         ▼                  ▼               ▼        │
-│  ┌─────────────────────────────────────────────┐    │
-│  │           NestJS API + WebSocket            │    │
-│  └─────────────────────┬───────────────────────┘    │
-│                        │                             │
-│  ┌──────────┐ ┌────────┴──┐ ┌──────────┐ ┌───────┐ │
-│  │PostgreSQL│ │   Redis   │ │  BullMQ  │ │Storage│ │
-│  │+pgvector │ │           │ │  Queues  │ │       │ │
-│  └──────────┘ └───────────┘ └──────────┘ └───────┘ │
-│                    Data Layer                        │
-└─────────────────────────────────────────────────────┘
-```
+| Capability              | Description                                                            |
+| ----------------------- | ---------------------------------------------------------------------- |
+| Multi-provider AI       | OpenAI, Anthropic, Gemini, and Ollama behind a provider-agnostic layer |
+| RAG pipeline            | Chunking, embeddings, retrieval, and grounded answers                  |
+| Vector search           | PostgreSQL + pgvector for semantic similarity                          |
+| GitHub integration      | OAuth, repo sync, webhooks, incremental updates                        |
+| Multi-tenant workspaces | Organizations, workspaces, and RBAC-oriented identity                  |
+| Real-time updates       | Socket.IO for sync progress and notifications                          |
+| VS Code extension       | IDE surface (scaffolded; deeper integration on the roadmap)            |
 
 ---
 
-## 🛠️ Tech Stack
+## How it works
 
-| Layer        | Technologies                                                                 |
-| ------------ | ---------------------------------------------------------------------------- |
-| **Frontend** | Next.js, React, TypeScript, Tailwind CSS, shadcn/ui, Zustand, TanStack Query |
-| **Backend**  | NestJS, TypeScript, Prisma, PostgreSQL, pgvector, Redis, BullMQ              |
-| **AI**       | OpenAI, Anthropic, Google Gemini, Ollama                                     |
-| **DevOps**   | Docker, GitHub Actions, ESLint, Prettier, Husky                              |
-| **Testing**  | Jest, Supertest, Playwright                                                  |
+End-to-end product flow from connect → sync → ask:
+
+```text
+Developer
+    │
+    ▼
+Next.js Frontend  ── HTTPS / REST / WebSocket ──►  NestJS API
+                                                      │
+         ┌────────────────┬───────────────────────────┼────────────────┐
+         ▼                ▼                           ▼                ▼
+   Identity / Auth   GitHub Provider            AI Engine         Search
+   (JWT + OAuth)     (REST + GraphQL)           (RAG)             (hybrid)
+         │                │                           │                │
+         │                ▼                           │                │
+         │         Background Workers (BullMQ)        │                │
+         │           • repo sync                      │                │
+         │           • webhook events                 │                │
+         │           • embedding jobs                 │                │
+         │                │                           │                │
+         └────────────────┴───────────┬───────────────┴────────────────┘
+                                      ▼
+                              PostgreSQL + pgvector
+                                      │
+                                      ▼
+                                    Redis
+                          (cache + BullMQ queues)
+                                      │
+                                      ▼
+                            AI Provider Layer
+                     Ollama │ OpenAI │ Gemini │ Anthropic
+```
+
+### Typical user journey
+
+1. **Sign up / sign in** — email or OAuth (Google / GitHub).
+2. **Create a workspace** — isolate projects and access.
+3. **Connect GitHub** — authorize the app; pick repositories to import.
+4. **Sync engineering history** — branches, commits, PRs, and docs are ingested via workers.
+5. **Build knowledge** — text is chunked, embedded, and stored in pgvector.
+6. **Ask the twin** — natural-language chat and semantic search over that knowledge.
+7. **Stay current** — GitHub webhooks trigger incremental re-sync.
+
+Live status and task tracking: [`CURRENT_STATUS.md`](./CURRENT_STATUS.md).
 
 ---
 
-## 📁 Project Structure
+## Architecture
 
-```
-ai-digital-twin-platform/
-├── frontend/           # Next.js frontend (App Router)
-├── backend/            # NestJS backend (Clean Architecture)
-├── vscode-extension/   # VS Code extension
-├── docs/               # 20 documentation files
-├── docker/             # Dockerfiles & Compose
-├── scripts/            # Utility scripts
-├── .github/            # CI/CD, templates, dependabot
-└── .vscode/            # Editor settings
-```
+Modular monolith (microservice-ready): deployable apps share typed packages.
+
+| Layer       | Role                                                             |
+| ----------- | ---------------------------------------------------------------- |
+| **Clients** | Next.js web app, VS Code extension                               |
+| **API**     | NestJS REST API (`/api/v1`), health probes, Swagger in non-prod  |
+| **Workers** | BullMQ jobs for sync, webhooks, embeddings                       |
+| **Data**    | PostgreSQL 17 + pgvector, Redis 7                                |
+| **AI**      | Provider abstraction + RAG (chunk → embed → retrieve → generate) |
+
+Details: [System Architecture](./docs/05-system-architecture/README.md) · [High-level diagram](./docs/05-system-architecture/02-high-level-architecture.md)
 
 ---
 
-## 🚀 Quick Start
+## Tech stack
+
+| Layer        | Technologies                                                                    |
+| ------------ | ------------------------------------------------------------------------------- |
+| **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS, TanStack Query, Zustand, Zod    |
+| **Backend**  | NestJS 11, Prisma, PostgreSQL, pgvector, Redis, BullMQ, Socket.IO, Passport/JWT |
+| **AI**       | OpenAI, Anthropic, Google Gemini, Ollama                                        |
+| **Monorepo** | npm workspaces (`apps/*`, `packages/*`)                                         |
+| **DevOps**   | Docker Compose, GitHub Actions, ESLint, Prettier, Husky, Commitlint             |
+| **Testing**  | Jest (backend), Playwright (frontend e2e planned)                               |
+
+Full reference: [Technology Stack](./docs/06-technology-stack/README.md)
+
+---
+
+## Repository structure
+
+```text
+AI-Digital-Twin-Platform/
+├── apps/
+│   ├── frontend/           # Next.js App Router UI
+│   ├── backend/            # NestJS API, Prisma, workers
+│   └── vscode-extension/   # VS Code extension (scaffold)
+├── packages/
+│   ├── shared/             # Shared domain utilities
+│   ├── types/              # Shared TypeScript types
+│   ├── ui/                 # Shared UI primitives
+│   ├── utils/              # Cross-cutting helpers
+│   └── config/             # Shared config / tooling
+├── docs/                   # Numbered product & architecture docs (01–24)
+├── infra/                  # Docker, nginx, Kubernetes configs
+├── scripts/                # Setup, DB, project-manager, utilities
+├── docker-compose.yml      # Local Postgres + Redis
+├── CURRENT_STATUS.md       # Live progress dashboard
+├── ROADMAP.md              # Development phases
+└── CONTRIBUTING.md         # Contributor setup & standards
+```
+
+Backend modules already in tree include identity, workspaces, GitHub OAuth, webhooks, and related domains. See [`apps/backend/README.md`](./apps/backend/README.md).
+
+---
+
+## Quick start
 
 ### Prerequisites
 
-- **Node.js** >= 22.0.0
-- **npm** >= 10.0.0
-- **Docker** & Docker Compose
+- **Node.js** ≥ 22 and **npm** ≥ 10
+- **Docker** & Docker Compose (Postgres + Redis)
 - **Git**
 
 ### Setup
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-org/ai-digital-twin.git
-cd ai-digital-twin
+# 1. Clone
+git clone https://github.com/Sangram10c/AI-Digital-Twin-Platform.git
+cd AI-Digital-Twin-Platform
 
-# 2. Run the setup script
-bash scripts/setup.sh
+# 2. Install workspace dependencies
+npm install
 
-# 3. Start infrastructure (PostgreSQL + Redis)
+# 3. Environment files
+cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
+# Fill JWT_SECRET, DATABASE_URL, REDIS_URL, and optional GitHub/AI keys
+
+# 4. Infrastructure
 docker-compose up -d
+# or: npm run docker:up
 
-# 4. Run database migrations
+# 5. Prisma client (+ migrate when ready)
+npm run db:generate
 npm run db:migrate
 
-# 5. Start development servers
+# 6. Development servers
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000` and the API at `http://localhost:4000`.
+| Service            | URL                            |
+| ------------------ | ------------------------------ |
+| Frontend           | http://localhost:3000          |
+| API                | http://localhost:4000/api/v1   |
+| Swagger (non-prod) | http://localhost:4000/api/docs |
+| Health             | http://localhost:4000/health   |
+
+Backend-specific commands (Redis, OAuth, webhooks): [`apps/backend/COMMANDS.md`](./apps/backend/COMMANDS.md)
 
 ---
 
-## 📦 Available Scripts
+## Scripts
 
-| Script                | Description                             |
-| --------------------- | --------------------------------------- |
-| `npm run dev`         | Start frontend + backend in development |
-| `npm run build`       | Build both projects for production      |
-| `npm run lint`        | Lint both projects                      |
-| `npm run test`        | Run all tests                           |
-| `npm run test:e2e`    | Run Playwright E2E tests                |
-| `npm run format`      | Format code with Prettier               |
-| `npm run docker:up`   | Start Docker services                   |
-| `npm run docker:down` | Stop Docker services                    |
-| `npm run db:migrate`  | Run Prisma migrations                   |
-| `npm run db:studio`   | Open Prisma Studio                      |
-| `npm run db:seed`     | Seed the database                       |
+| Script                                | Description                    |
+| ------------------------------------- | ------------------------------ |
+| `npm run dev`                         | Frontend + backend in parallel |
+| `npm run build`                       | Production build (both apps)   |
+| `npm run lint` / `typecheck` / `test` | Quality gates                  |
+| `npm run test:e2e`                    | Frontend Playwright e2e        |
+| `npm run format`                      | Prettier across the repo       |
+| `npm run docker:up` / `docker:down`   | Start / stop Postgres + Redis  |
+| `npm run db:generate`                 | Generate Prisma Client         |
+| `npm run db:migrate`                  | Run Prisma migrations          |
+| `npm run db:seed`                     | Seed reference / dev data      |
+| `npm run db:studio`                   | Open Prisma Studio             |
+| `npm run project:status`              | Project manager status CLI     |
 
 ---
 
-## 🐳 Docker
+## Docker
 
-### Development (Infrastructure only)
+**Local development (infrastructure only):**
 
 ```bash
-docker-compose up -d          # PostgreSQL + Redis
+docker-compose up -d          # PostgreSQL (pgvector/pg17) + Redis 7
 ```
 
-### Full Stack
-
-```bash
-docker-compose -f docker/docker-compose.yml up -d
-```
+**Full stack compose** (app images and related services) lives under [`infra/docker/`](./infra/docker/).
 
 ---
 
-## 🔧 Environment Variables
-
-Copy the example files and configure:
+## Environment variables
 
 ```bash
 cp .env.example .env
-cp frontend/.env.example frontend/.env.local
-cp backend/.env.example backend/.env
+cp apps/backend/.env.example apps/backend/.env
 ```
 
-See [Environment Variables Documentation](docs/17-environment-variables.md) for the complete reference.
+Root `.env.example` covers app URLs, database, Redis, JWT, OAuth, AI providers, embeddings, storage, queues, and rate limits. Backend overrides and secrets belong in `apps/backend/.env`.
+
+Never commit real secrets. See [Security](./docs/15-security/README.md).
 
 ---
 
-## 📚 Documentation
+## Documentation
 
-| Document                                                  | Description                    |
-| --------------------------------------------------------- | ------------------------------ |
-| [Project Overview](docs/01-project-overview.md)           | Vision and goals               |
-| [System Architecture](docs/02-system-architecture.md)     | Architecture diagrams          |
-| [Tech Stack](docs/03-tech-stack.md)                       | Technology choices             |
-| [Folder Structure](docs/04-folder-structure.md)           | Directory layout               |
-| [Database Design](docs/05-database-design.md)             | ER diagrams, pgvector          |
-| [API Design](docs/06-api-design.md)                       | REST conventions               |
-| [Authentication](docs/07-authentication.md)               | JWT, OAuth flows               |
-| [AI Architecture](docs/08-ai-architecture.md)             | Provider pattern               |
-| [RAG Pipeline](docs/09-rag-pipeline.md)                   | Retrieval-Augmented Generation |
-| [Vector Database](docs/10-vector-database.md)             | pgvector setup                 |
-| [Integrations](docs/11-integrations.md)                   | GitHub, Google                 |
-| [Security](docs/12-security.md)                           | OWASP, rate limiting           |
-| [Coding Standards](docs/13-coding-standards.md)           | Naming, patterns               |
-| [Development Roadmap](docs/14-development-roadmap.md)     | Phased plan                    |
-| [Deployment](docs/15-deployment.md)                       | Docker, CI/CD                  |
-| [Testing Strategy](docs/16-testing-strategy.md)           | Jest, Playwright               |
-| [Environment Variables](docs/17-environment-variables.md) | Variable reference             |
-| [Feature Roadmap](docs/18-feature-roadmap.md)             | Feature backlog                |
-| [Contributing](docs/19-contributing.md)                   | Contribution guide             |
-| [License](docs/20-license.md)                             | MIT License                    |
+Primary index: [`docs/README.md`](./docs/README.md)
 
----
+| #     | Document                                                                                                                                                                                         | Description                     |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| 01    | [Project Overview](./docs/01-project-overview/README.md)                                                                                                                                         | Vision and problem statement    |
+| 02    | [User Journeys](./docs/02-user-journeys/README.md)                                                                                                                                               | End-to-end user flows           |
+| 03    | [Functional Requirements](./docs/03-functional-requirements/README.md)                                                                                                                           | Feature requirements            |
+| 04    | [Non-Functional Requirements](./docs/04-non-functional-requirements/README.md)                                                                                                                   | Scale, reliability, DX          |
+| 05    | [System Architecture](./docs/05-system-architecture/README.md)                                                                                                                                   | Components and flows            |
+| 06    | [Technology Stack](./docs/06-technology-stack/README.md)                                                                                                                                         | Stack choices                   |
+| 07    | [Database ERD](./docs/07-database-erd/README.md)                                                                                                                                                 | Entities and relationships      |
+| 08    | [Database Design](./docs/08-database-design/README.md)                                                                                                                                           | Schema by domain                |
+| 09    | [API Design](./docs/09-api-design/README.md)                                                                                                                                                     | REST conventions and resources  |
+| 10    | [Authentication](./docs/10-authentication-design/README.md)                                                                                                                                      | JWT and OAuth                   |
+| 11    | [GitHub Integration](./docs/11-github-integration/README.md)                                                                                                                                     | Sync, webhooks, rate limits     |
+| 12    | [AI / RAG](./docs/12-ai-rag-architecture/README.md)                                                                                                                                              | Chunking, embeddings, retrieval |
+| 13    | [Search Engine](./docs/13-search-engine-design/README.md)                                                                                                                                        | Keyword + semantic search       |
+| 14    | [Background Jobs](./docs/14-background-jobs/README.md)                                                                                                                                           | Queues and workers              |
+| 15    | [Security](./docs/15-security/README.md)                                                                                                                                                         | AuthZ, secrets, throttling      |
+| 16–17 | [Frontend](./docs/16-frontend-architecture/README.md) / [Backend](./docs/17-backend-architecture/README.md)                                                                                      | App architecture                |
+| 18–20 | [Folder Structure](./docs/18-folder-structure/README.md) · [Coding Standards](./docs/19-coding-standards/README.md) · [Testing](./docs/20-testing-strategy/README.md)                            | Engineering practices           |
+| 21–24 | [Deployment](./docs/21-deployment/README.md) · [Roadmap](./docs/22-development-roadmap/README.md) · [Future](./docs/23-future-enhancements/README.md) · [Glossary](./docs/24-glossary/README.md) | Ops and planning                |
 
-## 🗺️ Roadmap
+Implementation notes for shipping backend modules: [`docs/backend/`](./docs/backend/README.md)
 
-- [x] **Phase 1**: Project architecture & scaffolding
-- [ ] **Phase 2**: Core backend (auth, users, workspaces)
-- [ ] **Phase 3**: Frontend foundation (design system, layouts)
-- [ ] **Phase 4**: Document management
-- [ ] **Phase 5**: AI integration & RAG
-- [ ] **Phase 6**: Real-time features
-- [ ] **Phase 7**: Advanced features (analytics, admin, extension)
-- [ ] **Phase 8**: Production readiness
+Agent / contributor rules: [`AGENT.md`](./AGENT.md) · [`CONTRIBUTING.md`](./CONTRIBUTING.md)
 
 ---
 
-## 🤝 Contributing
+## Roadmap
 
-We welcome contributions! See [Contributing Guide](docs/19-contributing.md) for details.
+Summarized from [`ROADMAP.md`](./ROADMAP.md):
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+| Phase                | Focus                                                              | Status                            |
+| -------------------- | ------------------------------------------------------------------ | --------------------------------- |
+| **1 — Foundation**   | Monorepo, Nest/Next skeletons, Prisma, auth, CI, Docker            | Done                              |
+| **2 — Core**         | Users/RBAC, workspaces, documents, knowledge CRUD, chat, Socket.IO | In progress                       |
+| **3 — Intelligence** | Embeddings, pgvector, semantic search, RAG, memory, timeline       | Planned                           |
+| **4 — Integrations** | Deeper GitHub, Google Workspace, VS Code, webhooks                 | Partial (GitHub OAuth + webhooks) |
+| **5 — Enterprise**   | Multi-tenant hardening, analytics, admin, audit, K8s               | Planned                           |
+
+Track day-to-day progress in [`CURRENT_STATUS.md`](./CURRENT_STATUS.md).
 
 ---
 
-## 📄 License
+## Contributing
 
-This project is licensed under the MIT License — see [LICENSE](docs/20-license.md) for details.
+See [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+
+1. Fork and branch from `main` (`feature/…` or `fix/…`).
+2. Follow Conventional Commits (`feat:`, `fix:`, `docs:`, …).
+3. Pass `npm run lint`, `npm run typecheck`, and `npm run test`.
+4. Open a pull request with a clear description.
+
+---
+
+## License
+
+MIT — see [`LICENSE`](./LICENSE).
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by the AI Digital Twin Team</sub>
+  <sub>Built for developers who want their engineering history to answer back.</sub>
 </div>
