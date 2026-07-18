@@ -2,14 +2,15 @@
 
 Implementation docs for completed NestJS backend phases (`apps/backend`).
 
-| Document                                             | Status   | Description                                        |
-| ---------------------------------------------------- | -------- | -------------------------------------------------- |
-| [backend-foundation.md](./backend-foundation.md)     | Complete | Config, health, security, logging                  |
-| [identity-module.md](./identity-module.md)           | Complete | Auth, JWT, users                                   |
-| [workspace-module.md](./workspace-module.md)         | Complete | Workspaces, members, permissions                   |
-| [github-integration.md](./github-integration.md)     | Complete | GitHub OAuth, multi-account, workspace link        |
-| [webhook-processing.md](./webhook-processing.md)     | Complete | GitHub webhooks, BullMQ routing, incremental sync  |
-| [knowledge-processing.md](./knowledge-processing.md) | Complete | Knowledge normalization, chunking, BullMQ pipeline |
+| Document                                             | Status   | Description                                           |
+| ---------------------------------------------------- | -------- | ----------------------------------------------------- |
+| [backend-foundation.md](./backend-foundation.md)     | Complete | Config, health, security, logging                     |
+| [identity-module.md](./identity-module.md)           | Complete | Auth, JWT, users                                      |
+| [workspace-module.md](./workspace-module.md)         | Complete | Workspaces, members, permissions                      |
+| [github-integration.md](./github-integration.md)     | Complete | GitHub OAuth, multi-account, workspace link           |
+| [webhook-processing.md](./webhook-processing.md)     | Complete | GitHub webhooks, BullMQ routing, incremental sync     |
+| [knowledge-processing.md](./knowledge-processing.md) | Complete | Knowledge normalization, chunking, BullMQ pipeline    |
+| [repository-sync.md](./repository-sync.md)           | Complete | Paginated entity sync, docs crawl, automated pipeline |
 
 ## Related (design / planning tree)
 

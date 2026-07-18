@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { BullMqCoreModule } from '../../common/modules/bullmq-core.module';
 import { GithubModule } from '../github/github.module';
 import { KnowledgeModule } from '../knowledge/knowledge.module';
+import { RepositoryModule } from '../repository/repository.module';
 import { WEBHOOK_QUEUES } from './constants/webhook.constants';
 import { GithubWebhookController } from './controllers/github-webhook.controller';
 import { WebhookEventsController } from './controllers/webhook-events.controller';
@@ -33,6 +34,7 @@ const queueNames = Object.values(WEBHOOK_QUEUES);
   imports: [
     GithubModule,
     KnowledgeModule,
+    RepositoryModule,
     BullMqCoreModule,
     BullModule.registerQueue(...queueNames.map((name) => ({ name }))),
   ],

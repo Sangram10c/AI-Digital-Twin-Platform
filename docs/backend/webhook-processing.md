@@ -30,6 +30,8 @@ After a domain sync worker finishes upserting GitHub data, `WebhookKnowledgeBrid
 
 Failures in the bridge are logged and **do not fail** webhook sync.
 
+Documentation changes and `package.json` updates also enqueue **documentation sync**, which then continues into knowledge + chunk generation. Full paginated sync: [repository-sync.md](./repository-sync.md).
+
 ## Architecture
 
 ```

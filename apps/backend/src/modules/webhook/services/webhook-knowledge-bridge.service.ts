@@ -1,11 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { KnowledgeQueueService } from '../../knowledge/jobs/knowledge-queue.service';
+import { RepositorySyncQueueService } from '../../repository/jobs/repository-sync-queue.service';
 import { WebhookJobPayload } from '../interfaces/webhook.interfaces';
 
 /**
- * After webhook domain sync succeeds, enqueue knowledge jobs so the
- * Digital Twin knowledge base stays fresh without a manual process call.
+ * After webhook domain sync succeeds:
+ * 1) enqueue knowledge for changed entities
+ * 2) enqueue documentation sync when docs/package files change
+ * 3) keep pipeline automated without heavy work in the HTTP handler
  */
 @Injectable()
 export class WebhookKnowledgeBridgeService {
@@ -14,6 +17,7 @@ export class WebhookKnowledgeBridgeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly knowledgeQueue: KnowledgeQueueService,
+    private readonly repositoryQueue: RepositorySyncQueueService,
   ) {}
 
   async enqueueFromWebhook(payload: WebhookJobPayload): Promise<void> {
@@ -40,16 +44,24 @@ export class WebhookKnowledgeBridgeService {
         case 'push':
         case 'create':
           await this.enqueueCommits(workspaceId, repositoryId, body);
-          if (this.touchesPackageJson(body)) {
+          if (this.touchesDocumentationOrPackageJson(body)) {
+            await this.repositoryQueue.enqueueDocumentationSync({
+              workspaceId,
+              repositoryId,
+              triggeredBy: `webhook:${payload.deliveryId}`,
+              force: false,
+              continuePipeline: true,
+            });
+            this.logger.log(
+              `Enqueued documentation sync after push for ${repositoryId}`,
+            );
+          } else if (this.touchesPackageJson(body)) {
             await this.knowledgeQueue.enqueueRepositoryProcessing({
               workspaceId,
               repositoryId,
               triggeredBy: `webhook:${payload.deliveryId}`,
               force: false,
             });
-            this.logger.log(
-              `Enqueued repository knowledge (package.json change) for ${repositoryId}`,
-            );
           }
           break;
 
@@ -64,22 +76,25 @@ export class WebhookKnowledgeBridgeService {
           break;
 
         case 'release':
-          await this.enqueueReleaseAsRepositoryRefresh(
+          await this.repositoryQueue.enqueueDocumentationSync({
             workspaceId,
             repositoryId,
-            payload.deliveryId,
-          );
+            triggeredBy: `webhook-release:${payload.deliveryId}`,
+            force: false,
+            continuePipeline: true,
+          });
           break;
 
         case 'repository':
-          await this.knowledgeQueue.enqueueRepositoryProcessing({
+          await this.repositoryQueue.enqueuePipeline({
             workspaceId,
             repositoryId,
             triggeredBy: `webhook:${payload.deliveryId}`,
             force: false,
+            stages: ['documentation', 'knowledge'],
           });
           this.logger.log(
-            `Enqueued repository knowledge refresh for ${repositoryId}`,
+            `Enqueued documentation+knowledge pipeline for ${repositoryId}`,
           );
           break;
 
@@ -87,7 +102,6 @@ export class WebhookKnowledgeBridgeService {
           break;
       }
     } catch (error) {
-      // Knowledge enqueue must never fail the webhook sync path.
       this.logger.warn(
         `Knowledge bridge skipped for ${payload.githubEvent}: ${
           error instanceof Error ? error.message : 'unknown error'
@@ -188,26 +202,9 @@ export class WebhookKnowledgeBridgeService {
     );
   }
 
-  private async enqueueReleaseAsRepositoryRefresh(
-    workspaceId: string,
-    repositoryId: string,
-    deliveryId: string,
-  ) {
-    // Release knowledge is created during repository orchestration;
-    // refresh repo knowledge so release notes get picked up.
-    await this.knowledgeQueue.enqueueRepositoryProcessing({
-      workspaceId,
-      repositoryId,
-      triggeredBy: `webhook-release:${deliveryId}`,
-      force: false,
-    });
-    this.logger.log(
-      `Enqueued repository knowledge after release for ${repositoryId}`,
-    );
-  }
-
-  private touchesPackageJson(body: Record<string, unknown>): boolean {
+  private collectChangedPaths(body: Record<string, unknown>): string[] {
     const commits = Array.isArray(body.commits) ? body.commits : [];
+    const paths: string[] = [];
     for (const raw of commits) {
       if (!raw || typeof raw !== 'object') continue;
       const commit = raw as {
@@ -215,19 +212,40 @@ export class WebhookKnowledgeBridgeService {
         modified?: string[];
         removed?: string[];
       };
-      const paths = [
+      paths.push(
         ...(commit.added ?? []),
         ...(commit.modified ?? []),
         ...(commit.removed ?? []),
-      ];
-      if (
-        paths.some(
-          (path) => path === 'package.json' || path.endsWith('/package.json'),
-        )
-      ) {
-        return true;
-      }
+      );
     }
-    return false;
+    return paths;
+  }
+
+  private touchesPackageJson(body: Record<string, unknown>): boolean {
+    return this.collectChangedPaths(body).some(
+      (path) => path === 'package.json' || path.endsWith('/package.json'),
+    );
+  }
+
+  private touchesDocumentationOrPackageJson(
+    body: Record<string, unknown>,
+  ): boolean {
+    return this.collectChangedPaths(body).some((path) => {
+      const lower = path.toLowerCase();
+      return (
+        lower === 'package.json' ||
+        lower.endsWith('/package.json') ||
+        lower === 'readme.md' ||
+        lower.endsWith('/readme.md') ||
+        lower.startsWith('docs/') ||
+        lower.startsWith('architecture/') ||
+        lower.startsWith('adr/') ||
+        lower.startsWith('.github/') ||
+        lower.startsWith('changelog') ||
+        lower.includes('contributing') ||
+        lower.includes('security.md') ||
+        lower.includes('license')
+      );
+    });
   }
 }

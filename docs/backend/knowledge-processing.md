@@ -132,6 +132,21 @@ Example shape:
 
 **Limits:** Function/symbol detection is best-effort (exports/classes in scanned files), not a full AST. Unknown packages stay under `otherDependencies`. Extend `known-packages.constants.ts` to teach new frameworks.
 
+## Automation pipeline (webhook → knowledge)
+
+```text
+Webhook event
+  → Repository / entity upsert (webhook workers)
+  → Documentation sync (when docs or package.json change)
+  → Knowledge processing jobs
+  → Chunk generation
+  → Status in repository.provider_metadata.pipelineStatus
+```
+
+Manual full sync: `POST /api/v1/repositories/:id/sync`
+
+See also [repository-sync.md](./repository-sync.md).
+
 ## Future integration points
 
 - **Embedding generation** — consume `KnowledgeChunk` rows where `deletedAt IS NULL`
