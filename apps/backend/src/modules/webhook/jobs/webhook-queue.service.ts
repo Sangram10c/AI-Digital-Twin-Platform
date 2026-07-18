@@ -73,7 +73,7 @@ export class WebhookQueueService {
       payload,
       {
         ...this.defaultJobOptions(),
-        jobId: `webhook:${payload.deliveryId}`,
+        jobId: `webhook-${payload.deliveryId}`,
       },
     );
     this.logger.debug(`Enqueued webhook job ${job.id}`);
@@ -88,7 +88,7 @@ export class WebhookQueueService {
     const queue = this.queueByName(queueName);
     const job = await queue.add(jobName, payload, {
       ...this.defaultJobOptions(),
-      jobId: `${queueName}:${payload.deliveryId}`,
+      jobId: `${queueName}-${payload.deliveryId}`,
     });
     return job;
   }

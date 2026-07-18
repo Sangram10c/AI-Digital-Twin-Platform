@@ -138,6 +138,100 @@ export class GithubApiClient {
     );
   }
 
+  async getRepositoryFileContent(input: {
+    accessToken: string;
+    owner: string;
+    repo: string;
+    path: string;
+    ref?: string;
+  }): Promise<{ path: string; content: string; sha: string } | null> {
+    const apiBaseUrl =
+      this.configService.get<string>('oauth.github.apiBaseUrl') ??
+      'https://api.github.com';
+    const params = new URLSearchParams();
+    if (input.ref) params.set('ref', input.ref);
+
+    const url = `${apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/contents/${input.path.replace(/^\/+/, '')}${
+      params.toString() ? `?${params}` : ''
+    }`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${input.accessToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new BadRequestException(
+        `Failed to fetch GitHub file ${input.path} (${response.status})`,
+      );
+    }
+
+    const data = (await response.json()) as {
+      type?: string;
+      path?: string;
+      content?: string;
+      encoding?: string;
+      sha?: string;
+    };
+
+    if (data.type !== 'file' || !data.content) {
+      return null;
+    }
+
+    const content =
+      data.encoding === 'base64'
+        ? Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString(
+            'utf8',
+          )
+        : data.content;
+
+    return {
+      path: data.path ?? input.path,
+      content,
+      sha: data.sha ?? '',
+    };
+  }
+
+  async getRepositoryTreePaths(input: {
+    accessToken: string;
+    owner: string;
+    repo: string;
+    ref?: string;
+  }): Promise<string[]> {
+    const apiBaseUrl =
+      this.configService.get<string>('oauth.github.apiBaseUrl') ??
+      'https://api.github.com';
+    const ref = input.ref ?? 'HEAD';
+    const url = `${apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/git/trees/${encodeURIComponent(ref)}?recursive=1`;
+
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${input.accessToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = (await response.json()) as {
+      tree?: Array<{ path?: string; type?: string }>;
+    };
+
+    return (data.tree ?? [])
+      .filter((node) => node.type === 'blob' && node.path)
+      .map((node) => node.path as string);
+  }
+
   private requireClientId(): string {
     const clientId = this.configService.get<string>('oauth.github.clientId');
     if (!clientId) {

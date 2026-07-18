@@ -1,2 +1,1 @@
-// Knowledge Constants
-// Export constants here as they are created
+export * from './knowledge.constants';

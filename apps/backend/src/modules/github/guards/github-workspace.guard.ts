@@ -33,10 +33,12 @@ export class GithubWorkspaceGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{
       user?: { id: string };
       query?: { workspaceId?: string };
+      body?: { workspaceId?: string };
     }>();
 
     const userId = request.user?.id;
-    const workspaceId = request.query?.workspaceId;
+    // Prefer query (GET/list), fall back to body (POST process endpoints).
+    const workspaceId = request.query?.workspaceId ?? request.body?.workspaceId;
 
     if (!userId || !workspaceId) {
       throw new ForbiddenException('Workspace access denied');

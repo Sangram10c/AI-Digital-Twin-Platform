@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: July 17, 2026 at 12:58 PM
+> Generated: July 18, 2026 at 11:58 AM
 
 ---
 
@@ -63,22 +63,35 @@
 
 ## 🔀 Git Status
 
-- **Branch:** main
-- **Last Commit:** Merge pull request #64 from Sangram10c/API-Design
-- **Commit Hash:** b8d3533
+- **Branch:** Knowledge-Processing
+- **Last Commit:** fix(ci): monorepo Dockerfiles and Playwright smoke e2e
+- **Commit Hash:** 92019f2
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
 ### Modified Files
 
-- .github/workflows/ci.yml
 - CURRENT_STATUS.md
-- apps/frontend/next.config.ts
-- apps/frontend/package.json
-- apps/frontend/playwright.config.ts
-- infra/docker/backend.Dockerfile
-- infra/docker/frontend.Dockerfile
-- apps/frontend/tests/e2e/smoke.spec.ts
+- apps/backend/src/app.module.ts
+- apps/backend/src/main.ts
+- apps/backend/src/modules/github/github.module.ts
+- apps/backend/src/modules/github/guards/github-workspace.guard.ts
+- apps/backend/src/modules/github/services/github-api.client.ts
+- apps/backend/src/modules/knowledge/constants/index.ts
+- apps/backend/src/modules/knowledge/dto/index.ts
+- apps/backend/src/modules/knowledge/interfaces/index.ts
+- apps/backend/src/modules/knowledge/knowledge.controller.ts
+- apps/backend/src/modules/knowledge/knowledge.module.ts
+- apps/backend/src/modules/webhook/jobs/webhook-queue.service.ts
+- apps/backend/src/modules/webhook/webhook.module.ts
+- docs/backend/README.md
+- apps/backend/src/common/modules/bullmq-core.module.ts
+- apps/backend/src/modules/knowledge/constants/knowledge.constants.ts
+- apps/backend/src/modules/knowledge/constants/known-packages.constants.ts
+- apps/backend/src/modules/knowledge/dto/knowledge.dto.ts
+- apps/backend/src/modules/knowledge/extractors/language-detector.service.spec.ts
+- apps/backend/src/modules/knowledge/extractors/language-detector.service.ts
+- _...and 21 more_
 
 ---
 
