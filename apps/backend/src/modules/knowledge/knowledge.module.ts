@@ -58,6 +58,10 @@ const queueNames = Object.values(KNOWLEDGE_QUEUES);
     ChunkGenerationProcessor,
     KnowledgeDeadLetterProcessor,
   ],
-  exports: [KnowledgeProcessingService, KnowledgeQueryService],
+  exports: [
+    KnowledgeProcessingService,
+    KnowledgeQueryService,
+    KnowledgeQueueService,
+  ],
 })
 export class KnowledgeModule {}
