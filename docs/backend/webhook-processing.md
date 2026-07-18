@@ -16,6 +16,22 @@ Without webhooks the app must poll GitHub or run full syncs. With webhooks:
 
 That is why updates can appear in **seconds**.
 
+## Knowledge bridge (live knowledge refresh)
+
+After a domain sync worker finishes upserting GitHub data, `WebhookKnowledgeBridgeService` enqueues knowledge jobs:
+
+| Webhook event                          | Knowledge action                                       |
+| -------------------------------------- | ------------------------------------------------------ |
+| `push` / `create`                      | Enqueue commit knowledge for each synced commit        |
+| `push` with `package.json` change      | Also enqueue full repository knowledge (stack refresh) |
+| `pull_request` / `pull_request_review` | Enqueue PR knowledge                                   |
+| `issues` / `issue_comment`             | Enqueue issue knowledge                                |
+| `release` / `repository`               | Enqueue repository knowledge refresh                   |
+
+Failures in the bridge are logged and **do not fail** webhook sync.
+
+Documentation changes and `package.json` updates also enqueue **documentation sync**, which then continues into knowledge + chunk generation. Full paginated sync: [repository-sync.md](./repository-sync.md).
+
 ## Architecture
 
 ```

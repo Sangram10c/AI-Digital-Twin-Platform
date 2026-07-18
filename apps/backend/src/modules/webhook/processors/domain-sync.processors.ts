@@ -7,6 +7,7 @@ import {
 } from '../constants/webhook.constants';
 import { WebhookJobPayload } from '../interfaces/webhook.interfaces';
 import { WebhookQueueService } from '../jobs/webhook-queue.service';
+import { WebhookKnowledgeBridgeService } from '../services/webhook-knowledge-bridge.service';
 import { WebhookPayloadSyncService } from '../services/webhook-payload-sync.service';
 
 abstract class DomainSyncProcessor extends WorkerHost {
@@ -16,6 +17,7 @@ abstract class DomainSyncProcessor extends WorkerHost {
   constructor(
     protected readonly payloadSync: WebhookPayloadSyncService,
     protected readonly queueService: WebhookQueueService,
+    protected readonly knowledgeBridge: WebhookKnowledgeBridgeService,
     loggerContext: string,
   ) {
     super();
@@ -27,7 +29,8 @@ abstract class DomainSyncProcessor extends WorkerHost {
       `Processing ${job.data.githubEvent} for webhook ${job.data.webhookEventId}`,
     );
     await this.payloadSync.processDomainJob(job.data);
-    return { ok: true };
+    await this.knowledgeBridge.enqueueFromWebhook(job.data);
+    return { ok: true, knowledgeEnqueued: true };
   }
 
   @OnWorkerEvent('failed')
@@ -54,8 +57,9 @@ export class CommitSyncProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, CommitSyncProcessor.name);
+    super(payloadSync, queueService, knowledgeBridge, CommitSyncProcessor.name);
   }
 }
 
@@ -68,8 +72,14 @@ export class PullRequestSyncProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, PullRequestSyncProcessor.name);
+    super(
+      payloadSync,
+      queueService,
+      knowledgeBridge,
+      PullRequestSyncProcessor.name,
+    );
   }
 }
 
@@ -82,8 +92,9 @@ export class IssueSyncProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, IssueSyncProcessor.name);
+    super(payloadSync, queueService, knowledgeBridge, IssueSyncProcessor.name);
   }
 }
 
@@ -96,8 +107,14 @@ export class ReleaseSyncProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, ReleaseSyncProcessor.name);
+    super(
+      payloadSync,
+      queueService,
+      knowledgeBridge,
+      ReleaseSyncProcessor.name,
+    );
   }
 }
 
@@ -110,8 +127,14 @@ export class RepositorySyncFromWebhookProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, RepositorySyncFromWebhookProcessor.name);
+    super(
+      payloadSync,
+      queueService,
+      knowledgeBridge,
+      RepositorySyncFromWebhookProcessor.name,
+    );
   }
 }
 
@@ -124,8 +147,14 @@ export class StatisticsSyncProcessor extends DomainSyncProcessor {
   constructor(
     payloadSync: WebhookPayloadSyncService,
     queueService: WebhookQueueService,
+    knowledgeBridge: WebhookKnowledgeBridgeService,
   ) {
-    super(payloadSync, queueService, StatisticsSyncProcessor.name);
+    super(
+      payloadSync,
+      queueService,
+      knowledgeBridge,
+      StatisticsSyncProcessor.name,
+    );
   }
 }
 

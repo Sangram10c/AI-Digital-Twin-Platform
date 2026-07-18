@@ -1,2 +1,1 @@
-// Knowledge DTOs
-// Export DTOs here as they are created
+export * from './knowledge.dto';

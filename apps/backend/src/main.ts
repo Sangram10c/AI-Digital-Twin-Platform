@@ -131,6 +131,11 @@ async function bootstrap(): Promise<void> {
       .addTag('workspaces', 'Workspace management')
       .addTag('github', 'GitHub OAuth integration')
       .addTag('webhooks', 'GitHub webhook ingestion and monitoring')
+      .addTag('knowledge', 'Knowledge processing and chunk generation')
+      .addTag(
+        'repository-sync',
+        'Repository entity sync and documentation crawl',
+      )
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
