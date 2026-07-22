@@ -82,7 +82,7 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.string().default('dev-oauth-token-encryption-key-32b'),
   }),
 
-  // AI (hybrid digest pipeline — free providers first)
+  // AI (hybrid digest pipeline)
   AI_DEFAULT_PROVIDER: Joi.string()
     .valid(
       'groq',
@@ -134,10 +134,6 @@ export const envValidationSchema = Joi.object({
   EMBEDDING_PROVIDER: Joi.string().default('openai'),
   EMBEDDING_MODEL: Joi.string().default('text-embedding-3-small'),
   EMBEDDING_DIMENSIONS: Joi.number().integer().positive().default(1536),
-  PRISMA_LOG_QUERIES: Joi.boolean()
-    .truthy('true')
-    .falsy('false')
-    .default(false),
 
   // Storage
   STORAGE_PROVIDER: Joi.string().valid('local', 's3').default('local'),

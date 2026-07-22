@@ -131,6 +131,7 @@ async function bootstrap(): Promise<void> {
       .addTag('workspaces', 'Workspace management')
       .addTag('github', 'GitHub OAuth integration')
       .addTag('webhooks', 'GitHub webhook ingestion and monitoring')
+      .addTag('ai', 'AI knowledge extraction and analysis queues')
       .addTag('knowledge', 'Knowledge processing and chunk generation')
       .addTag(
         'repository-sync',

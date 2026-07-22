@@ -24,6 +24,7 @@ import { UsersModule } from './modules/users/users.module';
 import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 import { GithubModule } from './modules/github/github.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
+import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { RepositoryModule } from './modules/repository/repository.module';
 
@@ -88,6 +89,7 @@ import { RepositoryModule } from './modules/repository/repository.module';
     WorkspacesModule,
     GithubModule,
     WebhookModule,
+    AiKnowledgeModule,
     KnowledgeModule,
     RepositoryModule,
 

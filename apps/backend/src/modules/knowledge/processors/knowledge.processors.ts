@@ -1,6 +1,7 @@
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
+import { KnowledgeAiBridgeService } from '../../ai-knowledge/services/knowledge-ai-bridge.service';
 import {
   DEFAULT_KNOWLEDGE_LIMITS,
   KNOWLEDGE_QUEUES,
@@ -55,6 +56,7 @@ export class RepositoryKnowledgeProcessor extends KnowledgeProcessor {
 
   constructor(
     private readonly processingService: KnowledgeProcessingService,
+    private readonly aiBridge: KnowledgeAiBridgeService,
     queueService: KnowledgeQueueService,
   ) {
     super(queueService, RepositoryKnowledgeProcessor.name);
@@ -62,10 +64,23 @@ export class RepositoryKnowledgeProcessor extends KnowledgeProcessor {
 
   async process(job: Job<KnowledgeJobPayload>) {
     this.logger.log(`Processing repository knowledge job ${job.id}`);
-    return this.processingService.processRepository(job.data.repositoryId, {
-      triggeredBy: job.data.triggeredBy,
-      force: job.data.force,
-    });
+    const result = await this.processingService.processRepository(
+      job.data.repositoryId,
+      {
+        triggeredBy: job.data.triggeredBy,
+        force: job.data.force,
+      },
+    );
+
+    if (result.documentId) {
+      await this.aiBridge.enqueueRepositoryAnalysis({
+        workspaceId: job.data.workspaceId,
+        repositoryId: job.data.repositoryId,
+        documentId: result.documentId,
+      });
+    }
+
+    return result;
   }
 }
 
@@ -166,17 +181,28 @@ export class ChunkGenerationProcessor extends KnowledgeProcessor {
 
   constructor(
     private readonly chunkGeneration: ChunkGenerationService,
+    private readonly aiBridge: KnowledgeAiBridgeService,
     queueService: KnowledgeQueueService,
   ) {
     super(queueService, ChunkGenerationProcessor.name);
   }
 
   async process(job: Job<KnowledgeChunkJobPayload>) {
-    return this.chunkGeneration.generateForDocument(
+    const result = await this.chunkGeneration.generateForDocument(
       job.data.documentKind,
       job.data.documentId,
       { force: job.data.force },
     );
+
+    await this.aiBridge.enqueueAfterChunkGeneration({
+      workspaceId: result.workspaceId,
+      repositoryId: result.repositoryId,
+      documentId: result.documentId,
+      documentKind: result.documentKind,
+      sourceType: result.sourceType,
+    });
+
+    return result;
   }
 }
 
