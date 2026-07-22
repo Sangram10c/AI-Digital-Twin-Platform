@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: July 22, 2026 at 03:32 PM
+> Generated: July 22, 2026 at 10:45 PM
 
 ---
 
@@ -64,8 +64,8 @@
 ## 🔀 Git Status
 
 - **Branch:** AI-Knowledge-Extraction
-- **Last Commit:** feat(config): enhance AI configuration for hybrid digest pipeline
-- **Commit Hash:** a9baad9
+- **Last Commit:** feat(ai): add hybrid AI knowledge digest pipeline
+- **Commit Hash:** 5a06f87
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -73,25 +73,7 @@
 
 - CURRENT_STATUS.md
 - CURRENT_STATUS.md.backup
-- PROJECT_REPORT.md
-- apps/backend/.env.example
-- apps/backend/prisma/schema.prisma
-- apps/backend/src/app.module.ts
-- apps/backend/src/config/ai.config.ts
-- apps/backend/src/config/env.validation.ts
-- apps/backend/src/database/prisma.service.ts
-- apps/backend/src/main.ts
-- apps/backend/src/modules/knowledge/knowledge.module.ts
-- apps/backend/src/modules/knowledge/processors/knowledge.processors.ts
-- apps/backend/src/modules/knowledge/services/chunk-generation.service.ts
-- docs/backend/README.md
-- apps/backend/docs/ai-model-test-results.json
-- apps/backend/prisma/migrations/hybrid_ai_digest_pipeline/migration.sql
-- apps/backend/scripts/check-hybrid-results.cjs
-- apps/backend/scripts/test-ai-keys.cjs
-- apps/backend/scripts/test-all-ai-models.cjs
-- apps/backend/scripts/test-ollama.cjs
-- _...and 39 more_
+- scripts/utilities/pre-push.js
 
 ---
 
