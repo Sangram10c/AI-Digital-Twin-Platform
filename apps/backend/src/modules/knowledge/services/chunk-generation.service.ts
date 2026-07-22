@@ -58,7 +58,15 @@ export class ChunkGenerationService {
           documentId,
           checksum,
         );
-        return { skipped: true, chunkCount: 0 };
+        return {
+          skipped: true,
+          chunkCount: 0,
+          workspaceId: document.workspaceId,
+          repositoryId: document.repositoryId,
+          documentKind,
+          documentId,
+          sourceType: document.sourceType,
+        };
       }
 
       const drafts = this.chunker.chunkDocument(cleaned);
@@ -77,7 +85,15 @@ export class ChunkGenerationService {
         [KNOWLEDGE_METADATA_KEYS.languageKind]: enrichedMetadata.languageKind,
       });
 
-      return { skipped: false, chunkCount };
+      return {
+        skipped: false,
+        chunkCount,
+        workspaceId: document.workspaceId,
+        repositoryId: document.repositoryId,
+        documentKind,
+        documentId,
+        sourceType: document.sourceType,
+      };
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Chunk generation failed';

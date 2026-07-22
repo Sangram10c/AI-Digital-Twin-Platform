@@ -82,19 +82,55 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.string().default('dev-oauth-token-encryption-key-32b'),
   }),
 
-  // AI (optional until AI module is implemented)
+  // AI (hybrid digest pipeline)
   AI_DEFAULT_PROVIDER: Joi.string()
-    .valid('openai', 'anthropic', 'gemini', 'ollama')
-    .default('openai'),
+    .valid(
+      'groq',
+      'openrouter',
+      'huggingface',
+      'cloudflare',
+      'openai',
+      'anthropic',
+      'gemini',
+      'ollama',
+    )
+    .default('groq'),
+  AI_BILLING_MODE: Joi.string()
+    .valid('free_only', 'mixed', 'paid')
+    .default('free_only'),
+  AI_EXTRACTION_MODE: Joi.string()
+    .valid('heuristics_only', 'heuristics', 'light', 'full')
+    .default('light'),
+  AI_PROVIDER_FALLBACK: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(true),
+  DIGEST_BATCH_SIZE: Joi.number().integer().positive().default(10),
+  PR_BATCH_SIZE: Joi.number().integer().positive().default(5),
+  MAX_AI_RETRIES: Joi.number().integer().positive().default(3),
+  GROQ_API_KEY: Joi.string().allow('').optional(),
+  GROQ_MODEL: Joi.string().default('llama-3.1-8b-instant'),
+  OPENROUTER_API_KEY: Joi.string().allow('').optional(),
+  OPENROUTER_MODEL: Joi.string().default('openrouter/free'),
+  HUGGINGFACE_API_KEY: Joi.string().allow('').optional(),
+  HUGGINGFACE_MODEL: Joi.string().default('Qwen/Qwen2.5-7B-Instruct'),
+  HUGGINGFACE_BASE_URL: Joi.string()
+    .uri()
+    .default('https://router.huggingface.co/v1/chat/completions'),
+  CLOUDFLARE_API_TOKEN: Joi.string().allow('').optional(),
+  CLOUDFLARE_ACCOUNT_ID: Joi.string().allow('').optional(),
+  CLOUDFLARE_AI_MODEL: Joi.string().default('@cf/meta/llama-3.1-8b-instruct'),
   OPENAI_API_KEY: Joi.string().allow('').optional(),
   OPENAI_ORG_ID: Joi.string().allow('').optional(),
-  OPENAI_MODEL: Joi.string().default('gpt-4o'),
+  OPENAI_MODEL: Joi.string().default('gpt-4o-mini'),
   ANTHROPIC_API_KEY: Joi.string().allow('').optional(),
   ANTHROPIC_MODEL: Joi.string().default('claude-sonnet-4-20250514'),
   GOOGLE_AI_API_KEY: Joi.string().allow('').optional(),
   GOOGLE_AI_MODEL: Joi.string().default('gemini-2.0-flash'),
-  OLLAMA_BASE_URL: Joi.string().uri().default('http://localhost:11434'),
-  OLLAMA_MODEL: Joi.string().default('llama3'),
+  OLLAMA_ENABLED: Joi.boolean().truthy('true').falsy('false').default(false),
+  OLLAMA_URL: Joi.string().uri().optional(),
+  OLLAMA_BASE_URL: Joi.string().uri().default('http://127.0.0.1:11434'),
+  OLLAMA_MODEL: Joi.string().default('llama3.2:1b'),
   EMBEDDING_PROVIDER: Joi.string().default('openai'),
   EMBEDDING_MODEL: Joi.string().default('text-embedding-3-small'),
   EMBEDDING_DIMENSIONS: Joi.number().integer().positive().default(1536),

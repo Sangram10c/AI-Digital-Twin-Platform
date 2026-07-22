@@ -1,0 +1,87 @@
+{
+  "testedAt": "2026-07-22T07:58:46.847Z",
+  "billingMode": "free_only",
+  "defaultProvider": "groq",
+  "results": [
+    {
+      "provider": "groq",
+      "tier": "free",
+      "model": "llama-3.1-8b-instant",
+      "ok": true,
+      "skipped": false,
+      "status": 200,
+      "latencyMs": 446,
+      "detail": "success"
+    },
+    {
+      "provider": "openrouter",
+      "tier": "free",
+      "model": "openrouter/free",
+      "ok": true,
+      "skipped": false,
+      "status": 200,
+      "latencyMs": 5099,
+      "detail": "success"
+    },
+    {
+      "provider": "huggingface",
+      "tier": "free",
+      "model": "Qwen/Qwen2.5-7B-Instruct",
+      "ok": true,
+      "skipped": false,
+      "status": 200,
+      "latencyMs": 10730,
+      "detail": "success"
+    },
+    {
+      "provider": "cloudflare",
+      "tier": "free",
+      "model": "@cf/meta/llama-3.1-8b-instruct",
+      "ok": false,
+      "skipped": false,
+      "status": 401,
+      "latencyMs": 133,
+      "detail": "{\"result\":null,\"success\":false,\"errors\":[{\"code\":10000,\"message\":\"Authentication error\"}],\"messages\":[]}"
+    },
+    {
+      "provider": "gemini",
+      "tier": "free-tier",
+      "model": "gemini-2.0-flash",
+      "ok": false,
+      "skipped": false,
+      "status": 429,
+      "latencyMs": 344,
+      "detail": "{ \"error\": { \"code\": 429, \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n"
+    },
+    {
+      "provider": "openai",
+      "tier": "paid (skipped in free_only)",
+      "model": "gpt-4o-mini",
+      "ok": false,
+      "skipped": false,
+      "status": 429,
+      "latencyMs": 1679,
+      "detail": "{ \"error\": { \"message\": \"You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.\", \"type\": \"insufficient_quota\", \"param\": null, \"code\": \"insuffi"
+    },
+    {
+      "provider": "anthropic",
+      "tier": "paid (skipped in free_only)",
+      "model": "claude-sonnet-4-20250514",
+      "ok": false,
+      "skipped": false,
+      "status": 400,
+      "latencyMs": 693,
+      "detail": "{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.\"},\"request_id\":\"req_011CdGkuAgMe9SYErgC8rzjc\"}"
+    },
+    {
+      "provider": "ollama",
+      "tier": "local-dev",
+      "model": "llama3.2:1b",
+      "ok": true,
+      "skipped": false,
+      "status": 200,
+      "latencyMs": 11323,
+      "detail": "success"
+    }
+  ]
+}

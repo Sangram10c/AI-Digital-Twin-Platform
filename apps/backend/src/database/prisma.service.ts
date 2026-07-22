@@ -26,13 +26,19 @@ export class PrismaService
 
     const adapter = new PrismaPg({ connectionString });
     const nodeEnv = configService.get<string>('app.nodeEnv');
+    // Query logging floods the terminal during knowledge/AI batch jobs.
+    // Opt in with PRISMA_LOG_QUERIES=true when debugging SQL.
+    const logQueries =
+      (process.env.PRISMA_LOG_QUERIES || '').toLowerCase() === 'true';
 
     super({
       adapter,
       log:
-        nodeEnv === 'development'
+        nodeEnv === 'development' && logQueries
           ? ['query', 'info', 'warn', 'error']
-          : ['error'],
+          : nodeEnv === 'development'
+            ? ['warn', 'error']
+            : ['error'],
     });
   }
 
