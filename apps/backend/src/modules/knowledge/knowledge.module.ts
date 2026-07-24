@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { BullMqCoreModule } from '../../common/modules/bullmq-core.module';
 import { AiKnowledgeModule } from '../ai-knowledge/ai-knowledge.module';
+import { EmbeddingsModule } from '../embeddings/embeddings.module';
 import { GithubModule } from '../github/github.module';
 import { KNOWLEDGE_QUEUES } from './constants/knowledge.constants';
 import { LanguageDetectorService } from './extractors/language-detector.service';
@@ -36,6 +37,7 @@ const queueNames = Object.values(KNOWLEDGE_QUEUES);
     BullModule.registerQueue(...queueNames.map((name) => ({ name }))),
     GithubModule,
     AiKnowledgeModule,
+    EmbeddingsModule,
   ],
   controllers: [KnowledgeController],
   providers: [

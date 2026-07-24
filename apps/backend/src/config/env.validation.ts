@@ -131,9 +131,26 @@ export const envValidationSchema = Joi.object({
   OLLAMA_URL: Joi.string().uri().optional(),
   OLLAMA_BASE_URL: Joi.string().uri().default('http://127.0.0.1:11434'),
   OLLAMA_MODEL: Joi.string().default('llama3.2:1b'),
-  EMBEDDING_PROVIDER: Joi.string().default('openai'),
-  EMBEDDING_MODEL: Joi.string().default('text-embedding-3-small'),
+  EMBEDDING_PROVIDER: Joi.string()
+    .valid('groq', 'gemini', 'openai', 'voyage', 'nomic', 'local', 'mock')
+    .default(process.env.NODE_ENV === 'production' ? 'openai' : 'mock'),
+  // Must match provider — factory remaps mismatches. Prod default: OpenAI.
+  EMBEDDING_MODEL: Joi.string().default(
+    process.env.NODE_ENV === 'production'
+      ? 'text-embedding-3-small'
+      : 'mock-embedding-v1',
+  ),
   EMBEDDING_DIMENSIONS: Joi.number().integer().positive().default(1536),
+  EMBEDDING_BATCH_SIZE: Joi.number().integer().min(1).max(100).default(20),
+  EMBEDDING_MAX_RETRIES: Joi.number().integer().min(0).max(10).default(3),
+  EMBEDDING_CONCURRENCY: Joi.number().integer().min(1).max(20).default(5),
+  EMBEDDING_VERSION: Joi.number().integer().min(1).default(1),
+  ENABLE_INCREMENTAL_EMBEDDINGS: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(true),
+  VOYAGE_API_KEY: Joi.string().allow('').optional(),
+  NOMIC_API_KEY: Joi.string().allow('').optional(),
 
   // Storage
   STORAGE_PROVIDER: Joi.string().valid('local', 's3').default('local'),

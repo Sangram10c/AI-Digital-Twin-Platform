@@ -1,2 +1,1 @@
-// Embeddings DTOs
-// Export DTOs here as they are created
+export * from './embeddings.dto';

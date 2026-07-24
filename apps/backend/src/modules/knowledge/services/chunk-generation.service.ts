@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
+import { EmbeddingOrchestrationService } from '../../embeddings/services/embedding-orchestration.service';
 import { KNOWLEDGE_METADATA_KEYS } from '../constants/knowledge.constants';
 import {
   KnowledgeDocumentKind,
@@ -23,6 +24,8 @@ export class ChunkGenerationService {
     private readonly languageDetector: LanguageDetectorService,
     private readonly chunker: KnowledgeChunkerService,
     private readonly documentBuilder: DocumentBuilderService,
+    @Optional()
+    private readonly embeddingOrchestration?: EmbeddingOrchestrationService,
   ) {}
 
   async generateForDocument(
@@ -84,6 +87,25 @@ export class ChunkGenerationService {
           enrichedMetadata.detectedLanguage,
         [KNOWLEDGE_METADATA_KEYS.languageKind]: enrichedMetadata.languageKind,
       });
+
+      if (
+        chunkCount > 0 &&
+        document.repositoryId &&
+        this.embeddingOrchestration
+      ) {
+        try {
+          await this.embeddingOrchestration.enqueueIncrementalForRepository(
+            document.repositoryId,
+            document.workspaceId,
+          );
+        } catch (error) {
+          this.logger.warn(
+            `Failed to enqueue incremental embeddings for repo=${document.repositoryId}: ${
+              error instanceof Error ? error.message : 'unknown'
+            }`,
+          );
+        }
+      }
 
       return {
         skipped: false,

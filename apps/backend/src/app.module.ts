@@ -27,6 +27,7 @@ import { WebhookModule } from './modules/webhook/webhook.module';
 import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { RepositoryModule } from './modules/repository/repository.module';
+import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { RepositoryModule } from './modules/repository/repository.module';
     AiKnowledgeModule,
     KnowledgeModule,
     RepositoryModule,
+    EmbeddingsModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,

@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: July 22, 2026 at 10:45 PM
+> Generated: July 24, 2026 at 07:08 PM
 
 ---
 
@@ -63,9 +63,9 @@
 
 ## 🔀 Git Status
 
-- **Branch:** AI-Knowledge-Extraction
-- **Last Commit:** feat(ai): add hybrid AI knowledge digest pipeline
-- **Commit Hash:** 5a06f87
+- **Branch:** Embedding-Pipeline
+- **Last Commit:** Merge pull request #70 from Sangram10c/AI-Knowledge-Extraction
+- **Commit Hash:** af858eb
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -73,7 +73,25 @@
 
 - CURRENT_STATUS.md
 - CURRENT_STATUS.md.backup
-- scripts/utilities/pre-push.js
+- apps/backend/.env.example
+- apps/backend/prisma/schema.prisma
+- apps/backend/src/app.module.ts
+- apps/backend/src/config/ai.config.ts
+- apps/backend/src/config/env.validation.ts
+- apps/backend/src/modules/ai-knowledge/ai-knowledge.module.ts
+- apps/backend/src/modules/ai-knowledge/processors/hybrid-pipeline.processors.ts
+- apps/backend/src/modules/embeddings/constants/index.ts
+- apps/backend/src/modules/embeddings/dto/index.ts
+- apps/backend/src/modules/embeddings/embeddings.controller.ts
+- apps/backend/src/modules/embeddings/embeddings.module.ts
+- apps/backend/src/modules/embeddings/interfaces/index.ts
+- apps/backend/src/modules/embeddings/types/index.ts
+- apps/backend/src/modules/knowledge/knowledge.module.ts
+- apps/backend/src/modules/knowledge/services/chunk-generation.service.ts
+- docs/backend/README.md
+- apps/backend/prisma/migrations/embedding_pipeline/migration.sql
+- apps/backend/src/modules/embeddings/constants/embeddings.constants.ts
+- _...and 23 more_
 
 ---
 
