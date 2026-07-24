@@ -12,6 +12,8 @@ Implementation docs for completed NestJS backend phases (`apps/backend`).
 | [knowledge-processing.md](./knowledge-processing.md)       | Complete | Knowledge normalization, chunking, BullMQ pipeline                  |
 | [repository-sync.md](./repository-sync.md)                 | Complete | Paginated entity sync, docs crawl, automated pipeline               |
 | [ai-knowledge-extraction.md](./ai-knowledge-extraction.md) | Complete | Provider-based AI extraction, prompts, queues, incremental analysis |
+| [hybrid-ai-pipeline.md](./hybrid-ai-pipeline.md)           | Complete | Heuristics → digests → AI → embeddings hand-off                     |
+| [embedding-pipeline.md](./embedding-pipeline.md)           | Complete | pgvector embedding queue, providers, checksums, APIs                |
 
 ## Related (design / planning tree)
 
@@ -32,6 +34,7 @@ See [`apps/backend/COMMANDS.md`](../../apps/backend/COMMANDS.md) for Redis, Pris
 | Knowledge processing       | `src/modules/knowledge/`    | Live — normalized sources, chunk generation via BullMQ                      |
 | Repository crawl/sync APIs | `src/modules/repository/`   | Live — paginated entity synchronization, docs crawl, pipeline orchestration |
 | AI knowledge extraction    | `src/modules/ai-knowledge/` | Live — provider-based engineering knowledge extraction via BullMQ           |
+| Embeddings (pgvector)      | `src/modules/embeddings/`   | Live — BullMQ embedding pipeline, multi-provider, checksum skip             |
 
 ## Free GitHub APIs (official)
 

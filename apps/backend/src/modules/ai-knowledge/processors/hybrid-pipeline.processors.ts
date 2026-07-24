@@ -2,6 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { KnowledgeHeuristicsService } from '../../knowledge-heuristics/services/knowledge-heuristics.service';
+import { EmbeddingOrchestrationService } from '../../embeddings/services/embedding-orchestration.service';
 import {
   AIExtractionMode,
   HYBRID_QUEUES,
@@ -113,18 +114,34 @@ export class HybridAiExtractionProcessor extends WorkerHost {
   }
 }
 
+/**
+ * Hybrid stage hand-off → EmbeddingModule pgvector queue (Phase 09).
+ * Keeps hybrid-embeddings queue name for backward compatibility.
+ */
 @Processor(HYBRID_QUEUES.EMBEDDINGS, { concurrency: 1 })
 export class HybridEmbeddingsStubProcessor extends WorkerHost {
   private readonly logger = new Logger(HybridEmbeddingsStubProcessor.name);
 
-  process(job: Job<HybridPipelineJobPayload>): Promise<unknown> {
+  constructor(
+    private readonly embeddingOrchestration: EmbeddingOrchestrationService,
+  ) {
+    super();
+  }
+
+  async process(job: Job<HybridPipelineJobPayload>): Promise<unknown> {
     this.logger.log(
-      `Embeddings stub complete for repo=${job.data.repositoryId} (vector indexing deferred)`,
+      `Hybrid embeddings stage → enqueue pgvector pipeline repo=${job.data.repositoryId}`,
     );
-    return Promise.resolve({
+    const result =
+      await this.embeddingOrchestration.enqueueIncrementalForRepository(
+        job.data.repositoryId,
+        job.data.workspaceId,
+      );
+    return {
       stage: 'embeddings',
-      status: 'STUBBED',
+      status: 'ENQUEUED',
       repositoryId: job.data.repositoryId,
-    });
+      result,
+    };
   }
 }

@@ -95,6 +95,16 @@ enum JobStatus {
   RETRYING
 }
 
+/// Lifecycle of a knowledge-chunk vector embedding (pgvector).
+enum EmbeddingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED
+  DELETED
+}
+
 // =============================================================================
 // Identity Domain (Phase 2)
 // =============================================================================
@@ -1003,15 +1013,31 @@ model KnowledgeChunk {
 
 /// Vector embedding for a knowledge chunk (pgvector).
 /// Dimensions default to 1536 (OpenAI text-embedding-3-small) — configurable per model.
+/// Operational fields live here (1:1 with KnowledgeChunk) — do not duplicate vector storage.
 model Embedding {
   id String @id @default(uuid()) @db.Uuid
 
   knowledgeChunkId String @unique @map("knowledge_chunk_id") @db.Uuid
 
-  model      String @db.VarChar(128)
-  dimensions Int    @default(1536)
+  /// Provider id: gemini | openai | voyage | nomic | local | mock
+  provider String @db.VarChar(64)
+
+  model    String @db.VarChar(128)
+  /// Monotonic embedding schema/version for provider/model migrations.
+  version  Int    @default(1) @map("embedding_version")
+  dimensions Int  @default(1536)
+
+  status EmbeddingStatus @default(PENDING)
+
+  /// SHA-256 of chunk content at embed time (skip regenerate when unchanged).
+  checksum String? @map("embedding_checksum") @db.VarChar(64)
 
   vector Unsupported("vector(1536)")?
+
+  errorMessage String? @map("error_message") @db.Text
+  latencyMs    Int?    @map("latency_ms")
+  tokenUsage   Int?    @map("token_usage")
+  retryCount   Int     @default(0) @map("retry_count")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1019,6 +1045,10 @@ model Embedding {
   knowledgeChunk KnowledgeChunk @relation(fields: [knowledgeChunkId], references: [id], onDelete: Cascade)
 
   @@index([model], map: "idx_embeddings_model")
+  @@index([status], map: "idx_embeddings_status")
+  @@index([provider], map: "idx_embeddings_provider")
+  @@index([checksum], map: "idx_embeddings_checksum")
+  @@index([version], map: "idx_embeddings_version")
   @@map("embeddings")
 }
 

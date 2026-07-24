@@ -2,6 +2,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { BullMqCoreModule } from '../../common/modules/bullmq-core.module';
 import { KnowledgeHeuristicsModule } from '../knowledge-heuristics/knowledge-heuristics.module';
+import { EmbeddingsModule } from '../embeddings/embeddings.module';
 import { AiKnowledgeController } from './controllers/ai-knowledge.controller';
 import { AI_KNOWLEDGE_QUEUES } from './constants/ai-knowledge.constants';
 import { HYBRID_QUEUES } from './constants/hybrid-pipeline.constants';
@@ -44,6 +45,7 @@ const queueNames = [
   imports: [
     BullMqCoreModule,
     KnowledgeHeuristicsModule,
+    EmbeddingsModule,
     BullModule.registerQueue(...queueNames.map((name) => ({ name }))),
   ],
   controllers: [AiKnowledgeController],

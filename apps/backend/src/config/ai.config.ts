@@ -79,8 +79,24 @@ export default registerAs('ai', () => ({
   },
 
   embeddings: {
-    provider: process.env.EMBEDDING_PROVIDER || 'openai',
-    model: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
+    // Local/CI: mock. Production: OpenAI text-embedding-3-small (1536 dims).
+    provider:
+      process.env.EMBEDDING_PROVIDER ||
+      (process.env.NODE_ENV === 'production' ? 'openai' : 'mock'),
+    model:
+      process.env.EMBEDDING_MODEL ||
+      (process.env.NODE_ENV === 'production'
+        ? 'text-embedding-3-small'
+        : 'mock-embedding-v1'),
     dimensions: parseInt(process.env.EMBEDDING_DIMENSIONS || '1536', 10),
+    batchSize: parseInt(process.env.EMBEDDING_BATCH_SIZE || '20', 10),
+    maxRetries: parseInt(process.env.EMBEDDING_MAX_RETRIES || '3', 10),
+    concurrency: parseInt(process.env.EMBEDDING_CONCURRENCY || '5', 10),
+    version: parseInt(process.env.EMBEDDING_VERSION || '1', 10),
+    incremental:
+      (process.env.ENABLE_INCREMENTAL_EMBEDDINGS || 'true').toLowerCase() !==
+      'false',
+    voyageApiKey: process.env.VOYAGE_API_KEY,
+    nomicApiKey: process.env.NOMIC_API_KEY,
   },
 }));
