@@ -23,13 +23,17 @@ npm run --prefix apps/backend start:dev
 
 ## Implemented modules
 
-| Module       | Path                     | Docs                                                              |
-| ------------ | ------------------------ | ----------------------------------------------------------------- |
-| Foundation   | config, health, filters  | [backend-foundation](../../../docs/backend/backend-foundation.md) |
-| Identity     | `src/modules/identity`   | [identity-module](../../../docs/backend/identity-module.md)       |
-| Workspaces   | `src/modules/workspaces` | [workspace-module](../../../docs/backend/workspace-module.md)     |
-| GitHub OAuth | `src/modules/github`     | [github-integration](../../../docs/backend/github-integration.md) |
-| Webhooks     | `src/modules/webhook`    | [webhook-processing](../../../docs/backend/webhook-processing.md) |
+| Module             | Path                         | Docs                                                                    |
+| ------------------ | ---------------------------- | ----------------------------------------------------------------------- |
+| Foundation         | config, health, filters      | [backend-foundation](../../../docs/backend/backend-foundation.md)       |
+| Identity           | `src/modules/identity`       | [identity-module](../../../docs/backend/identity-module.md)             |
+| Workspaces         | `src/modules/workspaces`     | [workspace-module](../../../docs/backend/workspace-module.md)           |
+| GitHub OAuth       | `src/modules/github`         | [github-integration](../../../docs/backend/github-integration.md)       |
+| Webhooks           | `src/modules/webhook`        | [webhook-processing](../../../docs/backend/webhook-processing.md)       |
+| Knowledge          | `src/modules/knowledge`      | [knowledge-processing](../../../docs/backend/knowledge-processing.md)   |
+| Embeddings         | `src/modules/embeddings`     | [embedding-pipeline](../../../docs/backend/embedding-pipeline.md)       |
+| Hybrid Search      | `src/modules/search`         | [hybrid-search-engine](../../../docs/backend/hybrid-search-engine.md)   |
+| Source-code ingest | knowledge + chunker services | [source-code-ingestion](../../../docs/backend/source-code-ingestion.md) |
 
 Module index: [docs/backend/README.md](../../../docs/backend/README.md)
 
@@ -49,7 +53,8 @@ Module index: [docs/backend/README.md](../../../docs/backend/README.md)
 
 ## Status
 
-**Complete on this branch:** Foundation, Identity, Workspaces, GitHub OAuth, GitHub Webhooks.  
-**Not on this branch:** Full repository crawl/read APIs (`src/modules/repository/`).
+**Complete:** Foundation, Identity, Workspaces, GitHub OAuth/Webhooks, Knowledge, Embeddings, **Hybrid Search**, source-code ingestion.  
+**Next (project docs):** Background Job Architecture (doc 14).  
+**Also upcoming:** Chat/answer generation over retrieved chunks.
 
-Last updated: 2026-07-16
+Last updated: 2026-07-30

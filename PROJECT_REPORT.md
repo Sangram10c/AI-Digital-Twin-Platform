@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: July 30, 2026 at 12:35 PM
+> Generated: July 30, 2026 at 12:47 PM
 
 ---
 
@@ -64,8 +64,8 @@
 ## 🔀 Git Status
 
 - **Branch:** Hybrid-Search-Engine
-- **Last Commit:** feat(search): add hybrid search engine and source-code ingestion
-- **Commit Hash:** 4b00dc6
+- **Last Commit:** chore(project): mark AI/RAG and Search Engine docs complete
+- **Commit Hash:** 463f942
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -73,7 +73,10 @@
 
 - CURRENT_STATUS.md
 - CURRENT_STATUS.md.backup
-- PROJECT_REPORT.md
+- README.md
+- ROADMAP.md
+- apps/backend/README.md
+- docs/backend/README.md
 
 ---
 
