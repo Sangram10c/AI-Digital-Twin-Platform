@@ -50,9 +50,9 @@ Central documentation index for the AI Digital Twin Platform. Content migrated f
 | [API Design](./09-api-design/README.md)                                   | Migrated                       | TBD   | 2026-07-09   |
 | [Authentication Design](./10-authentication-design/README.md)             | Migrated                       | TBD   | 2026-07-09   |
 | [GitHub Integration](./11-github-integration/README.md)                   | Implemented (OAuth + Webhooks) | TBD   | 2026-07-16   |
-| [AI RAG Architecture](./12-ai-rag-architecture/README.md)                 | Migrated                       | TBD   | 2026-07-09   |
-| [Search Engine Design](./13-search-engine-design/README.md)               | Migrated                       | TBD   | 2026-07-09   |
-| [Background Jobs](./14-background-jobs/README.md)                         | Migrated                       | TBD   | 2026-07-09   |
+| [AI RAG Architecture](./12-ai-rag-architecture/README.md)                 | ✅ Completed (implemented)     | TBD   | 2026-07-30   |
+| [Search Engine Design](./13-search-engine-design/README.md)               | ✅ Completed (hybrid search)   | TBD   | 2026-07-30   |
+| [Background Jobs](./14-background-jobs/README.md)                         | 🟡 In Progress (current)       | TBD   | 2026-07-30   |
 | [Security](./15-security/README.md)                                       | Migrated                       | TBD   | 2026-07-09   |
 | [Frontend Architecture](./16-frontend-architecture/README.md)             | Migrated                       | TBD   | 2026-07-09   |
 | [Backend Architecture](./17-backend-architecture/README.md)               | Migrated                       | TBD   | 2026-07-09   |
