@@ -46,13 +46,13 @@ The platform should become an AI Engineering Assistant capable of understanding 
 
 Current Focus:
 
-GitHub Integration — OAuth and webhooks are implemented; finish full repository sync / crawl APIs and complete doc 11.
+Hybrid Search Engine (doc 13) is implemented and shipped on branch `Hybrid-Search-Engine`. Next: Background Job Architecture (doc 14).
 
 ---
 
 # 📄 Current Document
 
-**12 - AI / RAG Architecture**
+**14 - Background Job Architecture**
 
 Status:
 
@@ -60,10 +60,10 @@ Status:
 
 Progress:
 
-- ✅ GitHub OAuth (multi-account)
-- ✅ Workspace linking
-- ✅ Webhooks + BullMQ incremental sync
-- ⬜ Full repository crawl / read REST APIs
+- ✅ AI / RAG Architecture (embeddings + knowledge)
+- ✅ Search Engine Design (hybrid vector + keyword)
+- ⬜ Background Job Architecture documentation / gaps
+- ⬜ Security Architecture
 
 ---
 
@@ -82,9 +82,9 @@ Progress:
 | 09  | API Design                  | ✅ Completed   |
 | 10  | Authentication Design       | ✅ Completed   |
 | 11  | GitHub Integration          | ✅ Completed   |
-| 12  | AI / RAG Architecture       | 🟡 In Progress |
-| 13  | Search Engine Design        | 🟡 In Progress |
-| 14  | Background Job Architecture | ⬜ Not Started |
+| 12  | AI / RAG Architecture       | ✅ Completed   |
+| 13  | Search Engine Design        | ✅ Completed   |
+| 14  | Background Job Architecture | 🟡 In Progress |
 | 15  | Security Architecture       | ⬜ Not Started |
 | 16  | Frontend Architecture       | ⬜ Not Started |
 | 17  | Backend Architecture        | ⬜ Not Started |
@@ -103,7 +103,7 @@ Progress:
 | Phase        | Progress |
 | ------------ | -------- |
 | Planning     | 100%     |
-| Architecture | 73%      |
+| Architecture | 86%      |
 | Backend      | 0%       |
 | Frontend     | 0%       |
 | AI           | 0%       |
@@ -230,20 +230,20 @@ These features are planned for future versions:
 
 Complete:
 
-12-ai-/-rag-architecture.md
+14-background-job-architecture.md
 
 Remaining:
 
-- Full repository crawl / read REST APIs (`apps/backend/src/modules/repository/`)
-- Finalize [docs/11-github-integration](./docs/11-github-integration/README.md) (sync strategy docs)
+- Align BullMQ job docs with implemented queues (embeddings, knowledge, sync, search side-effects)
+- Document retry / DLQ / concurrency policies
 
 ---
 
 # 📌 Next Task
 
-After GitHub Integration:
+After Background Job Architecture:
 
-12 — AI / RAG Architecture
+15 — Security Architecture
 
 ---
 
@@ -362,15 +362,15 @@ Update this section after every completed milestone.
 
 Current Milestone:
 
-✅ AI / RAG Architecture Documentation
+✅ Background Job Architecture Documentation
 
 Current Focus:
 
-🟡 AI / RAG Architecture Documentation
+🟡 Background Job Architecture Documentation
 
 Next Milestone:
 
-Search Engine Design Approved
+Security Architecture Approved
 
 ---
 

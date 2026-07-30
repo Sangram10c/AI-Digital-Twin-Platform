@@ -14,12 +14,16 @@ Implementation docs for completed NestJS backend phases (`apps/backend`).
 | [ai-knowledge-extraction.md](./ai-knowledge-extraction.md) | Complete | Provider-based AI extraction, prompts, queues, incremental analysis |
 | [hybrid-ai-pipeline.md](./hybrid-ai-pipeline.md)           | Complete | Heuristics → digests → AI → embeddings hand-off                     |
 | [embedding-pipeline.md](./embedding-pipeline.md)           | Complete | pgvector embedding queue, providers, checksums, APIs                |
+| [hybrid-search-engine.md](./hybrid-search-engine.md)       | Complete | Hybrid vector + keyword search, ranking, cache, metrics             |
+| [source-code-ingestion.md](./source-code-ingestion.md)     | Complete | Prioritized `.ts`/`.js` symbol chunks for code-aware RAG            |
 
 ## Related (design / planning tree)
 
 - [GitHub Integration (11)](../11-github-integration/README.md)
+- [AI / RAG Architecture (12)](../12-ai-rag-architecture/README.md) ✅
+- [Search Engine Design (13)](../13-search-engine-design/README.md) ✅
 - [API Design — GitHub](../09-api-design/github.md)
-- [Background Jobs (14)](../14-background-jobs/README.md)
+- [Background Jobs (14)](../14-background-jobs/README.md) 🟡 current
 
 ## Local commands
 
@@ -35,6 +39,8 @@ See [`apps/backend/COMMANDS.md`](../../apps/backend/COMMANDS.md) for Redis, Pris
 | Repository crawl/sync APIs | `src/modules/repository/`   | Live — paginated entity synchronization, docs crawl, pipeline orchestration |
 | AI knowledge extraction    | `src/modules/ai-knowledge/` | Live — provider-based engineering knowledge extraction via BullMQ           |
 | Embeddings (pgvector)      | `src/modules/embeddings/`   | Live — BullMQ embedding pipeline, multi-provider, checksum skip             |
+| Hybrid search              | `src/modules/search/`       | Live — vector + FTS + ranking; `POST /api/v1/search`                        |
+| Source-code ingestion      | knowledge services          | Live — free-tier capped prioritized `.ts`/`.js` symbol chunks               |
 
 ## Free GitHub APIs (official)
 
@@ -46,4 +52,4 @@ OAuth, REST, and webhooks used by this platform are **GitHub’s free public API
 - https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 - https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api
 
-Last updated: 2026-07-21
+Last updated: 2026-07-30
