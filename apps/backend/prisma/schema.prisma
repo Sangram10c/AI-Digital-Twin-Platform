@@ -990,6 +990,9 @@ model KnowledgeChunk {
 
   metadata Json? @db.JsonB
 
+  /// Full-text search document (maintained by DB trigger — Phase 10).
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -1004,10 +1007,12 @@ model KnowledgeChunk {
 
   @@unique([knowledgeSourceId, chunkIndex], map: "uq_knowledge_chunks_source_index")
   @@unique([documentationId, chunkIndex], map: "uq_knowledge_chunks_documentation_index")
+  @@index([workspaceId], map: "idx_knowledge_chunks_workspace_id")
   @@index([repositoryId], map: "idx_knowledge_chunks_repository_id")
   @@index([documentationId], map: "idx_knowledge_chunks_documentation_id")
   @@index([contentHash], map: "idx_knowledge_chunks_content_hash")
   @@index([deletedAt], map: "idx_knowledge_chunks_deleted_at")
+  @@index([workspaceId, repositoryId, deletedAt], map: "idx_knowledge_chunks_ws_repo_deleted")
   @@map("knowledge_chunks")
 }
 

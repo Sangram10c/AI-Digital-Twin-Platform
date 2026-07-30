@@ -1,0 +1,217 @@
+export const SEARCH_TOP_K_OPTIONS = [5, 10, 20, 50] as const;
+export type SearchTopK = (typeof SEARCH_TOP_K_OPTIONS)[number];
+
+export const SEARCH_MODES = ['hybrid', 'vector', 'keyword'] as const;
+export type SearchMode = (typeof SEARCH_MODES)[number];
+
+export const SEARCH_DEFAULTS = {
+  topK: 10 as SearchTopK,
+  maxTopK: 50 as SearchTopK,
+  timeoutMs: 8000,
+  previewChars: 280,
+  cacheTtlSeconds: 300,
+  embeddingCacheTtlSeconds: 3600,
+  historyLimit: 50,
+  rrfK: 60,
+  weights: {
+    semantic: 0.55,
+    keyword: 0.25,
+    quality: 0.1,
+    freshness: 0.05,
+    repository: 0.05,
+  },
+} as const;
+
+/** English stop words used by QueryProcessor (lightweight, no NLP deps). */
+export const SEARCH_STOP_WORDS = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'but',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'of',
+  'as',
+  'by',
+  'with',
+  'from',
+  'is',
+  'are',
+  'was',
+  'were',
+  'be',
+  'been',
+  'being',
+  'have',
+  'has',
+  'had',
+  'do',
+  'does',
+  'did',
+  'will',
+  'would',
+  'could',
+  'should',
+  'may',
+  'might',
+  'must',
+  'shall',
+  'can',
+  'this',
+  'that',
+  'these',
+  'those',
+  'it',
+  'its',
+  'into',
+  'about',
+  'over',
+  'under',
+  'again',
+  'further',
+  'then',
+  'once',
+  'here',
+  'there',
+  'when',
+  'where',
+  'why',
+  'how',
+  'all',
+  'each',
+  'few',
+  'more',
+  'most',
+  'other',
+  'some',
+  'such',
+  'no',
+  'nor',
+  'not',
+  'only',
+  'own',
+  'same',
+  'so',
+  'than',
+  'too',
+  'very',
+  'just',
+  'what',
+  'which',
+  'who',
+  'whom',
+  'i',
+  'me',
+  'my',
+  'we',
+  'our',
+  'you',
+  'your',
+  'he',
+  'she',
+  'they',
+  'them',
+  'their',
+]);
+
+/** Lightweight synonym expansion for repository / code search. */
+export const SEARCH_QUERY_EXPANSIONS: Record<string, string[]> = {
+  auth: ['authentication', 'authorization', 'jwt', 'oauth', 'login'],
+  db: ['database', 'postgres', 'postgresql', 'prisma', 'sql'],
+  api: ['endpoint', 'controller', 'route', 'rest', 'http'],
+  embed: ['embedding', 'embeddings', 'vector', 'pgvector', 'similarity'],
+  embedding: [
+    'embeddings',
+    'embed',
+    'pgvector',
+    'vector',
+    'embedding-storage',
+    'upsert',
+  ],
+  embeddings: ['embedding', 'pgvector', 'vector', 'embedding-storage'],
+  pgvector: [
+    'vector',
+    'embedding',
+    'embeddings',
+    'embedding-storage',
+    'cosine',
+    'hnsw',
+  ],
+  vector: ['pgvector', 'embedding', 'embeddings', 'similarity', 'cosine'],
+  storage: ['embedding-storage', 'store', 'upsert', 'persist'],
+  search: ['retrieval', 'hybrid', 'fts', 'rank', 'pgvector'],
+  cache: ['redis', 'ttl', 'memoize'],
+  queue: ['bullmq', 'job', 'worker', 'async'],
+  repo: ['repository', 'github', 'git'],
+  pr: ['pullrequest', 'pull_request', 'merge'],
+  ci: ['pipeline', 'github actions', 'workflow'],
+  implement: ['implementation', 'service', 'function', 'class'],
+  integrated: ['integration', 'implementation', 'service'],
+  intigrated: ['integrated', 'integration', 'implementation'],
+};
+
+/** Queries that ask for code location / implementation — boost source_code chunks. */
+export const CODE_INTENT_TERMS = new Set([
+  'file',
+  'files',
+  'function',
+  'functions',
+  'class',
+  'method',
+  'implement',
+  'implementation',
+  'integrated',
+  'intigrated',
+  'integration',
+  'where',
+  'which',
+  'code',
+  'service',
+  'module',
+  'pgvector',
+  'embedding',
+  'embeddings',
+  'vector',
+  'storage',
+]);
+
+/**
+ * Filename / path patterns that are strong evidence for storage/vector queries.
+ * Applied as ranking boosts (not filters).
+ */
+export const IMPLEMENTATION_PATH_BOOSTS: Array<{ re: RegExp; boost: number }> =
+  [
+    { re: /embedding-storage/i, boost: 0.55 },
+    { re: /vector-storage|embedding\.storage/i, boost: 0.4 },
+    { re: /\/embeddings\/services\/embedding-storage/i, boost: 0.2 },
+    { re: /storage\.service\.[jt]sx?$/i, boost: 0.28 },
+    { re: /\/embeddings\/services\//i, boost: 0.12 },
+  ];
+
+/** Search/retrieval helpers — boost only when query is NOT storage-focused. */
+export const RETRIEVAL_PATH_BOOSTS: Array<{ re: RegExp; boost: number }> = [
+  { re: /embedding-query|vector-search/i, boost: 0.2 },
+];
+
+/** Paths that often match synonym lists / wiring only — demote for code-intent queries. */
+export const NOISE_PATH_PENALTIES: Array<{ re: RegExp; penalty: number }> = [
+  { re: /search\.constants\.[jt]sx?$/i, penalty: 0.55 },
+  { re: /\.constants\.[jt]sx?$/i, penalty: 0.28 },
+  { re: /embeddings\.module\.[jt]sx?$/i, penalty: 0.15 },
+  { re: /\.module\.[jt]sx?$/i, penalty: 0.1 },
+  { re: /\.(spec|test)\.[jt]sx?$/i, penalty: 0.35 },
+  { re: /identity\//i, penalty: 0.25 },
+  { re: /auth\//i, penalty: 0.15 },
+];
+
+export const SEARCH_REDIS_KEYS = {
+  result: (hash: string) => `search:result:${hash}`,
+  embedding: (hash: string) => `search:embedding:${hash}`,
+  popular: (workspaceId: string) => `search:popular:${workspaceId}`,
+  metrics: (workspaceId: string) => `search:metrics:${workspaceId}`,
+} as const;

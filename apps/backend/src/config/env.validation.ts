@@ -152,6 +152,59 @@ export const envValidationSchema = Joi.object({
   VOYAGE_API_KEY: Joi.string().allow('').optional(),
   NOMIC_API_KEY: Joi.string().allow('').optional(),
 
+  // Hybrid search (Phase 10)
+  SEARCH_DEFAULT_TOP_K: Joi.number().integer().valid(5, 10, 20, 50).default(10),
+  SEARCH_MAX_TOP_K: Joi.number().integer().valid(5, 10, 20, 50).default(50),
+  SEARCH_TIMEOUT_MS: Joi.number().integer().min(500).max(60000).default(8000),
+  SEARCH_PREVIEW_CHARS: Joi.number().integer().min(80).max(2000).default(280),
+  SEARCH_CACHE_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(0)
+    .max(86400)
+    .default(300),
+  SEARCH_EMBEDDING_CACHE_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(0)
+    .max(86400)
+    .default(3600),
+  SEARCH_HISTORY_LIMIT: Joi.number().integer().min(1).max(200).default(50),
+  SEARCH_CACHE_ENABLED: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(true),
+  SEARCH_WEIGHT_SEMANTIC: Joi.number().min(0).max(1).default(0.55),
+  SEARCH_WEIGHT_KEYWORD: Joi.number().min(0).max(1).default(0.25),
+  SEARCH_WEIGHT_QUALITY: Joi.number().min(0).max(1).default(0.1),
+  SEARCH_WEIGHT_FRESHNESS: Joi.number().min(0).max(1).default(0.05),
+  SEARCH_WEIGHT_REPOSITORY: Joi.number().min(0).max(1).default(0.05),
+  SEARCH_RRF_K: Joi.number().integer().min(1).max(200).default(60),
+
+  // Knowledge source-code ingest (free-tier friendly caps)
+  KNOWLEDGE_SOURCE_CODE_ENABLED: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(true),
+  KNOWLEDGE_SOURCE_CODE_MAX_FILES: Joi.number()
+    .integer()
+    .min(1)
+    .max(500)
+    .default(80),
+  KNOWLEDGE_SOURCE_CODE_MAX_FILE_BYTES: Joi.number()
+    .integer()
+    .min(1024)
+    .max(1024 * 1024)
+    .default(200 * 1024),
+  KNOWLEDGE_SOURCE_CODE_FETCH_GAP_MS: Joi.number()
+    .integer()
+    .min(0)
+    .max(5000)
+    .default(50),
+  KNOWLEDGE_SOURCE_CODE_ALLOW_LOCAL: Joi.boolean()
+    .truthy('true')
+    .falsy('false')
+    .default(true),
+  KNOWLEDGE_SOURCE_CODE_LOCAL_ROOT: Joi.string().allow('').optional(),
+
   // Storage
   STORAGE_PROVIDER: Joi.string().valid('local', 's3').default('local'),
   STORAGE_LOCAL_PATH: Joi.string().default('./uploads'),

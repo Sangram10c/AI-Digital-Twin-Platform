@@ -12,6 +12,9 @@ import { LanguageDetectorService } from '../extractors/language-detector.service
 import { KnowledgeValidatorService } from '../validators/knowledge-validator.service';
 import { DocumentBuilderService } from './document-builder.service';
 import { KnowledgeChunkerService } from './knowledge-chunker.service';
+import { CodeSymbolChunkerService } from './code-symbol-chunker.service';
+import { DetectedLanguageKind } from '../interfaces/knowledge.interfaces';
+import { hasSourceCodeExtension } from '../constants/source-code.constants';
 
 @Injectable()
 export class ChunkGenerationService {
@@ -23,6 +26,7 @@ export class ChunkGenerationService {
     private readonly cleaner: ContentCleanerService,
     private readonly languageDetector: LanguageDetectorService,
     private readonly chunker: KnowledgeChunkerService,
+    private readonly codeChunker: CodeSymbolChunkerService,
     private readonly documentBuilder: DocumentBuilderService,
     @Optional()
     private readonly embeddingOrchestration?: EmbeddingOrchestrationService,
@@ -38,7 +42,15 @@ export class ChunkGenerationService {
 
     try {
       this.validator.validateDocument(document);
-      const cleaned = this.cleaner.clean(document.rawContent);
+      const filePath = document.path ?? document.metadata.filePath;
+      const isSourceCode =
+        document.metadata.documentType === 'source_code' ||
+        (typeof filePath === 'string' && hasSourceCodeExtension(filePath));
+
+      // Avoid HTML/tag stripping on TypeScript generics (e.g. Promise<string>).
+      const cleaned = isSourceCode
+        ? document.rawContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim()
+        : this.cleaner.clean(document.rawContent);
       const enrichedMetadata = this.languageDetector.applyToMetadata(
         document,
         cleaned,
@@ -72,7 +84,11 @@ export class ChunkGenerationService {
         };
       }
 
-      const drafts = this.chunker.chunkDocument(cleaned);
+      const drafts =
+        isSourceCode ||
+        enrichedMetadata.languageKind === DetectedLanguageKind.PROGRAMMING
+          ? this.codeChunker.chunkCode(cleaned, filePath ?? 'unknown')
+          : this.chunker.chunkDocument(cleaned);
       const chunkCount = await this.persistChunks(
         documentKind,
         documentId,

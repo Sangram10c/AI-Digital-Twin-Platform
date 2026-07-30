@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: July 24, 2026 at 07:08 PM
+> Generated: July 30, 2026 at 12:25 PM
 
 ---
 
@@ -63,35 +63,35 @@
 
 ## 🔀 Git Status
 
-- **Branch:** Embedding-Pipeline
-- **Last Commit:** Merge pull request #70 from Sangram10c/AI-Knowledge-Extraction
-- **Commit Hash:** af858eb
+- **Branch:** Hybrid-Search-Engine
+- **Last Commit:** Merge pull request #71 from Sangram10c/Embedding-Pipeline
+- **Commit Hash:** 56b2082
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
 ### Modified Files
 
 - CURRENT_STATUS.md
-- CURRENT_STATUS.md.backup
+- PROJECT_REPORT.md
 - apps/backend/.env.example
 - apps/backend/prisma/schema.prisma
 - apps/backend/src/app.module.ts
-- apps/backend/src/config/ai.config.ts
 - apps/backend/src/config/env.validation.ts
-- apps/backend/src/modules/ai-knowledge/ai-knowledge.module.ts
-- apps/backend/src/modules/ai-knowledge/processors/hybrid-pipeline.processors.ts
-- apps/backend/src/modules/embeddings/constants/index.ts
-- apps/backend/src/modules/embeddings/dto/index.ts
-- apps/backend/src/modules/embeddings/embeddings.controller.ts
-- apps/backend/src/modules/embeddings/embeddings.module.ts
-- apps/backend/src/modules/embeddings/interfaces/index.ts
-- apps/backend/src/modules/embeddings/types/index.ts
+- apps/backend/src/config/index.ts
+- apps/backend/src/config/oauth.config.ts
+- apps/backend/src/modules/github/services/github-api.client.ts
+- apps/backend/src/modules/knowledge/extractors/metadata-extractor.service.ts
+- apps/backend/src/modules/knowledge/knowledge.controller.ts
 - apps/backend/src/modules/knowledge/knowledge.module.ts
 - apps/backend/src/modules/knowledge/services/chunk-generation.service.ts
-- docs/backend/README.md
-- apps/backend/prisma/migrations/embedding_pipeline/migration.sql
-- apps/backend/src/modules/embeddings/constants/embeddings.constants.ts
-- _...and 23 more_
+- apps/backend/src/modules/knowledge/services/knowledge-processing.service.ts
+- apps/backend/src/modules/search/constants/index.ts
+- apps/backend/src/modules/search/dto/index.ts
+- apps/backend/src/modules/search/interfaces/index.ts
+- apps/backend/src/modules/search/search.controller.ts
+- apps/backend/src/modules/search/search.module.ts
+- apps/backend/src/modules/search/search.service.ts
+- _...and 25 more_
 
 ---
 

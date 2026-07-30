@@ -1,2 +1,1 @@
-// Search Constants
-// Export constants here as they are created
+export * from './search.constants';

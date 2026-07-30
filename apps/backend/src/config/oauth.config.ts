@@ -1,6 +1,11 @@
 import { registerAs } from '@nestjs/config';
 
-const DEFAULT_GITHUB_SCOPES = ['read:user', 'user:email'];
+const DEFAULT_GITHUB_SCOPES = [
+  'read:user',
+  'user:email',
+  // Required for source-code / tree / contents APIs (reconnect GitHub after changing).
+  'repo',
+];
 
 export default registerAs('oauth', () => ({
   google: {

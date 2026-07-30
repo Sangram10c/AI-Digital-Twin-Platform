@@ -11,6 +11,7 @@ import { KnowledgeValidatorService } from '../validators/knowledge-validator.ser
 import { KnowledgeQueueService } from '../jobs/knowledge-queue.service';
 import { DocumentBuilderService } from './document-builder.service';
 import { RepositoryStackService } from './repository-stack.service';
+import { SourceCodeIngestionService } from './source-code-ingestion.service';
 
 @Injectable()
 export class KnowledgeProcessingService {
@@ -23,6 +24,7 @@ export class KnowledgeProcessingService {
     private readonly documentBuilder: DocumentBuilderService,
     private readonly queueService: KnowledgeQueueService,
     private readonly repositoryStackService: RepositoryStackService,
+    private readonly sourceCodeIngestion: SourceCodeIngestionService,
   ) {}
 
   async processRepository(
@@ -80,12 +82,37 @@ export class KnowledgeProcessingService {
       options,
     );
 
+    let sourceCode: Awaited<
+      ReturnType<SourceCodeIngestionService['ingestRepository']>
+    > | null = null;
+    try {
+      sourceCode = await this.sourceCodeIngestion.ingestRepository(
+        repositoryId,
+        options,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Source-code ingestion failed for ${repositoryId}: ${
+          error instanceof Error ? error.message : 'unknown error'
+        }`,
+      );
+    }
+
     return {
       repositoryId,
       documentId: persisted.documentId,
       skipped: persisted.skipped,
       enqueued: true,
+      sourceCode,
     };
+  }
+
+  /** Explicit source-code ingest (free-tier capped .ts/.js files). */
+  processSourceCode(
+    repositoryId: string,
+    options: { force?: boolean; triggeredBy?: string } = {},
+  ) {
+    return this.sourceCodeIngestion.ingestRepository(repositoryId, options);
   }
 
   async processCommit(

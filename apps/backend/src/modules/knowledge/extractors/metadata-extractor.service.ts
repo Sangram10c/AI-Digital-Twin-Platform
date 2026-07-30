@@ -206,6 +206,44 @@ export class MetadataExtractorService {
     };
   }
 
+  /**
+   * Source file from Git (ts/js/…). Stored as KnowledgeSource CUSTOM.
+   * externalRefId = file path so re-ingest upserts the same row.
+   */
+  fromSourceFile(input: {
+    repository: Repository;
+    path: string;
+    content: string;
+    sha?: string;
+  }): NormalizedKnowledgeDocument {
+    const { repository, path, content, sha } = input;
+    const fileName = path.split('/').pop() ?? path;
+    const metadata: KnowledgeProcessingMetadata = {
+      documentType: 'source_code',
+      filePath: path,
+      commitSha: sha,
+      branch: repository.defaultBranch,
+      repositoryLanguage: repository.language ?? undefined,
+      sourceUpdatedAt: new Date().toISOString(),
+      languageKind: DetectedLanguageKind.PROGRAMMING,
+    };
+
+    return {
+      documentKind: KnowledgeDocumentKind.SOURCE,
+      workspaceId: repository.workspaceId,
+      repositoryId: repository.id,
+      sourceType: KnowledgeSourceType.CUSTOM,
+      externalRefId: `file:${path}`,
+      title: fileName,
+      rawContent: content,
+      path,
+      url: repository.url
+        ? `${repository.url.replace(/\/$/, '')}/blob/${repository.defaultBranch}/${path}`
+        : undefined,
+      metadata,
+    };
+  }
+
   private firstLine(message: string): string {
     return message.split('\n')[0]?.trim() ?? message;
   }

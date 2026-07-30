@@ -1,2 +1,1 @@
-// Search DTOs
-// Export DTOs here as they are created
+export * from './search.dto';
