@@ -103,6 +103,25 @@ export class KnowledgeController {
     };
   }
 
+  @Post('repository/:id/source-code')
+  @RequireKnowledgeWorkspace(WorkspacePermission.CREATE_REPOSITORIES)
+  @ApiOperation({
+    summary:
+      'Ingest prioritized .ts/.js source files (free-tier capped) for code-aware RAG',
+  })
+  @ApiParam({ name: 'id', description: 'Repository UUID' })
+  @ApiBody({ type: ProcessRepositoryKnowledgeDto })
+  processSourceCode(
+    @Param('id', ParseUUIDPipe) repositoryId: string,
+    @Body() body: ProcessRepositoryKnowledgeDto,
+    @CurrentDeveloper() developer: AuthenticatedDeveloper,
+  ) {
+    return this.processingService.processSourceCode(repositoryId, {
+      triggeredBy: developer.id,
+      force: body.force,
+    });
+  }
+
   @Get('documents')
   @RequireKnowledgeWorkspace(WorkspacePermission.READ_WORKSPACE)
   @ApiOperation({ summary: 'List normalized knowledge documents' })

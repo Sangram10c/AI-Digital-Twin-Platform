@@ -22,11 +22,13 @@ import {
   RepositoryKnowledgeProcessor,
 } from './processors/knowledge.processors';
 import { ChunkGenerationService } from './services/chunk-generation.service';
+import { CodeSymbolChunkerService } from './services/code-symbol-chunker.service';
 import { DocumentBuilderService } from './services/document-builder.service';
 import { KnowledgeChunkerService } from './services/knowledge-chunker.service';
 import { KnowledgeProcessingService } from './services/knowledge-processing.service';
 import { KnowledgeQueryService } from './services/knowledge-query.service';
 import { RepositoryStackService } from './services/repository-stack.service';
+import { SourceCodeIngestionService } from './services/source-code-ingestion.service';
 import { KnowledgeValidatorService } from './validators/knowledge-validator.service';
 
 const queueNames = Object.values(KNOWLEDGE_QUEUES);
@@ -49,8 +51,10 @@ const queueNames = Object.values(KNOWLEDGE_QUEUES);
     KnowledgeValidatorService,
     DocumentBuilderService,
     KnowledgeChunkerService,
+    CodeSymbolChunkerService,
     ChunkGenerationService,
     RepositoryStackService,
+    SourceCodeIngestionService,
     KnowledgeProcessingService,
     KnowledgeQueryService,
     KnowledgeQueueService,

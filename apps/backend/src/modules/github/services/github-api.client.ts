@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GitHubEmail } from '../interfaces/github-profile.interface';
@@ -10,6 +11,8 @@ import { GitHubProfile } from '../interfaces/github-profile.interface';
 
 @Injectable()
 export class GithubApiClient {
+  private readonly logger = new Logger(GithubApiClient.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   buildAuthorizationUrl(state: string): string {
@@ -208,21 +211,134 @@ export class GithubApiClient {
     const apiBaseUrl =
       this.configService.get<string>('oauth.github.apiBaseUrl') ??
       'https://api.github.com';
-    const ref = input.ref ?? 'HEAD';
-    const url = `${apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/git/trees/${encodeURIComponent(ref)}?recursive=1`;
+    const ref = input.ref?.trim() || 'HEAD';
+
+    // Resolve branch/tag name → commit SHA (more reliable than raw branch on /git/trees).
+    const sha = await this.resolveRefToCommitSha({
+      accessToken: input.accessToken,
+      owner: input.owner,
+      repo: input.repo,
+      ref,
+      apiBaseUrl,
+    });
+
+    const treeRef = sha ?? ref;
+    const url = `${apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/git/trees/${encodeURIComponent(treeRef)}?recursive=1`;
+
+    const response = await this.requestWithRateLimit(url, input.accessToken);
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.warn(
+        `tree failed ${input.owner}/${input.repo} ref=${treeRef} status=${response.status} ${body.slice(0, 200)}`,
+      );
+      return [];
+    }
+
+    const data = (await response.json()) as {
+      tree?: Array<{ path?: string; type?: string }>;
+      truncated?: boolean;
+    };
+
+    if (data.truncated) {
+      this.logger.warn(
+        `tree truncated for ${input.owner}/${input.repo} — some paths may be missing`,
+      );
+    }
+
+    return (data.tree ?? [])
+      .filter((node) => node.type === 'blob' && node.path)
+      .map((node) => node.path as string);
+  }
+
+  /**
+   * List a single directory via Contents API (used when recursive tree is empty/unavailable).
+   */
+  async listRepositoryDirectory(input: {
+    accessToken: string;
+    owner: string;
+    repo: string;
+    path: string;
+    ref?: string;
+  }): Promise<Array<{ path: string; type: 'file' | 'dir'; size?: number }>> {
+    const apiBaseUrl =
+      this.configService.get<string>('oauth.github.apiBaseUrl') ??
+      'https://api.github.com';
+    const params = new URLSearchParams();
+    if (input.ref) params.set('ref', input.ref);
+    const cleanPath = input.path.replace(/^\/+/, '').replace(/\/+$/, '');
+    const url = `${apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/contents/${cleanPath}${
+      params.toString() ? `?${params}` : ''
+    }`;
 
     const response = await this.requestWithRateLimit(url, input.accessToken);
     if (!response.ok) {
       return [];
     }
 
-    const data = (await response.json()) as {
-      tree?: Array<{ path?: string; type?: string }>;
-    };
+    const data = (await response.json()) as unknown;
+    if (!Array.isArray(data)) {
+      // Single file object
+      const file = data as { path?: string; type?: string; size?: number };
+      if (file.type === 'file' && file.path) {
+        return [{ path: file.path, type: 'file', size: file.size }];
+      }
+      return [];
+    }
 
-    return (data.tree ?? [])
-      .filter((node) => node.type === 'blob' && node.path)
-      .map((node) => node.path as string);
+    const entries: Array<{
+      path: string;
+      type: 'file' | 'dir';
+      size?: number;
+    }> = [];
+    for (const raw of data as Array<{
+      path?: string;
+      type?: string;
+      size?: number;
+    }>) {
+      if (!raw.path || !raw.type) continue;
+      if (raw.type === 'file') {
+        entries.push({ path: raw.path, type: 'file', size: raw.size });
+      } else if (raw.type === 'dir') {
+        entries.push({ path: raw.path, type: 'dir' });
+      }
+    }
+    return entries;
+  }
+
+  private async resolveRefToCommitSha(input: {
+    accessToken: string;
+    owner: string;
+    repo: string;
+    ref: string;
+    apiBaseUrl: string;
+  }): Promise<string | null> {
+    if (/^[0-9a-f]{40}$/i.test(input.ref)) {
+      return input.ref;
+    }
+
+    const branchUrl = `${input.apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/branches/${encodeURIComponent(input.ref)}`;
+    const branchRes = await this.requestWithRateLimit(
+      branchUrl,
+      input.accessToken,
+    );
+    if (branchRes.ok) {
+      const data = (await branchRes.json()) as {
+        commit?: { sha?: string };
+      };
+      if (data.commit?.sha) return data.commit.sha;
+    }
+
+    const commitUrl = `${input.apiBaseUrl}/repos/${encodeURIComponent(input.owner)}/${encodeURIComponent(input.repo)}/commits/${encodeURIComponent(input.ref)}`;
+    const commitRes = await this.requestWithRateLimit(
+      commitUrl,
+      input.accessToken,
+    );
+    if (commitRes.ok) {
+      const data = (await commitRes.json()) as { sha?: string };
+      if (data.sha) return data.sha;
+    }
+
+    return null;
   }
 
   /**

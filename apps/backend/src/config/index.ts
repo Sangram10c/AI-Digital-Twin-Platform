@@ -6,7 +6,9 @@ import { envValidationSchema } from './env.validation';
 import jwtConfig from './jwt.config';
 import oauthConfig from './oauth.config';
 import redisConfig from './redis.config';
+import searchConfig from './search.config';
 import storageConfig from './storage.config';
+import knowledgeConfig from './knowledge.config';
 
 export const configNamespaces = [
   appConfig,
@@ -17,6 +19,8 @@ export const configNamespaces = [
   aiConfig,
   storageConfig,
   bullmqConfig,
+  searchConfig,
+  knowledgeConfig,
 ];
 
 export {
@@ -28,5 +32,7 @@ export {
   jwtConfig,
   oauthConfig,
   redisConfig,
+  searchConfig,
   storageConfig,
+  knowledgeConfig,
 };

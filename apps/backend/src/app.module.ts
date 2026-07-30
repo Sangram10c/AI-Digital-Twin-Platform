@@ -28,6 +28,7 @@ import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
 import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { RepositoryModule } from './modules/repository/repository.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
+import { SearchModule } from './modules/search/search.module';
 
 @Module({
   imports: [
@@ -94,6 +95,7 @@ import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
     KnowledgeModule,
     RepositoryModule,
     EmbeddingsModule,
+    SearchModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,
