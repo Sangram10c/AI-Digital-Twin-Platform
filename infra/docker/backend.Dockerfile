@@ -3,7 +3,7 @@
 # Build context: repository root
 # ========================================
 
-FROM node:22-alpine AS deps
+FROM node:25-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY packages/utils/package.json ./packages/utils/package.json
 
 RUN npm ci
 
-FROM node:22-alpine AS builder
+FROM node:25-alpine AS builder
 RUN apk add --no-cache openssl
 WORKDIR /app
 
@@ -38,7 +38,7 @@ RUN npm run build
 WORKDIR /app
 RUN npm prune --omit=dev
 
-FROM node:22-alpine AS runner
+FROM node:25-alpine AS runner
 RUN apk add --no-cache openssl dumb-init
 WORKDIR /app
 
