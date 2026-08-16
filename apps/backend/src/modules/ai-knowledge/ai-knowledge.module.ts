@@ -84,6 +84,8 @@ const queueNames = [
     HybridAiOrchestrationService,
     HybridAiPipelineService,
     HybridPipelineQueueService,
+    // Exported so ChatModule can inject the fallback provider chain.
+    AiProviderFallbackService,
   ],
 })
 export class AiKnowledgeModule {}
