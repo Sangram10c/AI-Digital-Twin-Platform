@@ -29,6 +29,7 @@ import { KnowledgeModule } from './modules/knowledge/knowledge.module';
 import { RepositoryModule } from './modules/repository/repository.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 import { SearchModule } from './modules/search/search.module';
+import { ChatModule } from './modules/chat/chat.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { SearchModule } from './modules/search/search.module';
     RepositoryModule,
     EmbeddingsModule,
     SearchModule,
+    ChatModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,

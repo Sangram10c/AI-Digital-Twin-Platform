@@ -34,11 +34,26 @@ export class GithubWorkspaceGuard implements CanActivate {
       user?: { id: string };
       query?: { workspaceId?: string };
       body?: { workspaceId?: string };
+      params?: { workspaceId?: string; id?: string };
     }>();
 
     const userId = request.user?.id;
-    // Prefer query (GET/list), fall back to body (POST process endpoints).
-    const workspaceId = request.query?.workspaceId ?? request.body?.workspaceId;
+    // Prefer query (GET/list), fall back to body (POST process endpoints), or params.
+    let workspaceId =
+      request.query?.workspaceId ??
+      request.body?.workspaceId ??
+      request.params?.workspaceId;
+
+    // If accessing a specific resource by ID (e.g. conversationId), resolve its workspaceId.
+    if (!workspaceId && request.params?.id) {
+      const conversation = await this.prisma.conversation.findUnique({
+        where: { id: request.params.id },
+        select: { workspaceId: true },
+      });
+      if (conversation) {
+        workspaceId = conversation.workspaceId;
+      }
+    }
 
     if (!userId || !workspaceId) {
       throw new ForbiddenException('Workspace access denied');
