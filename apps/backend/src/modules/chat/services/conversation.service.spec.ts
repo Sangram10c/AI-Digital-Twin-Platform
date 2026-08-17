@@ -21,6 +21,9 @@ const mockPrisma = {
     findFirst: jest.fn(),
     findMany: jest.fn(),
   },
+  repository: {
+    findFirst: jest.fn(),
+  },
 };
 
 describe('ConversationService', () => {
@@ -126,6 +129,63 @@ describe('ConversationService', () => {
       const title = service.buildAutoTitle(longQuery);
       expect(title.length).toBeLessThanOrEqual(80);
       expect(title.endsWith('…')).toBe(true);
+    });
+  });
+
+  describe('assertOwnership', () => {
+    it('should throw NotFoundException when conversation does not exist', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue(null);
+      await expect(
+        service.assertOwnership('conv-999', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException when conversation is soft-deleted', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
+        deletedAt: new Date(),
+      });
+      await expect(service.assertOwnership('conv-1', 'user-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw ForbiddenException when user does not own conversation', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'other-user',
+        workspaceId: 'ws-1',
+        deletedAt: null,
+      });
+      await expect(service.assertOwnership('conv-1', 'user-1')).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('should throw ForbiddenException when workspace does not match', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'user-1',
+        workspaceId: 'other-ws',
+        deletedAt: null,
+      });
+      await expect(
+        service.assertOwnership('conv-1', 'user-1', 'ws-1'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should resolve without error when conversation is valid and owned', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'user-1',
+        workspaceId: 'ws-1',
+        deletedAt: null,
+      });
+      await expect(
+        service.assertOwnership('conv-1', 'user-1', 'ws-1'),
+      ).resolves.toBeUndefined();
     });
   });
 

@@ -1,16 +1,16 @@
 // ============================================================
 // Conversation Orchestrator Service
 // The main 10-step RAG pipeline:
-//   1. Resolve / create conversation
-//   2. Persist user message
-//   3. Execute hybrid search
-//   4. Token budget allocation
-//   5. Build grounded prompt
-//   6. Call AI with fallback
-//   7. Parse & format response
-//   8. Persist assistant message + AIResponse
-//   9. Build & persist citations
-//  10. Log ModelUsage + PromptHistory (fire-and-forget)
+//   1.  Resolve / create conversation
+//   2.  Persist user message
+//   3.  Load conversation history (bounded)
+//   4.  Execute hybrid search (RAG retrieval)
+//   5.  Token budget allocation
+//   6.  Build grounded prompt
+//   7.  Call AI with fallback
+//   8.  Parse & format response
+//   9.  Persist assistant message + AIResponse (atomic)
+//  10.  Persist citations + usage + prompt history (fire-and-forget)
 // ============================================================
 
 import {
@@ -53,25 +53,42 @@ export class ConversationOrchestratorService {
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const started = Date.now();
     const provider = request.provider ?? CHAT_DEFAULTS.defaultProvider;
+
     // Map arbitrary topK to valid SearchTopK literal (5 | 10 | 20 | 50).
     const requestedTopK = request.topK ?? CHAT_DEFAULTS.topK;
     const validTopKValues = [5, 10, 20, 50] as const;
     const topK = validTopKValues.find((v) => v >= requestedTopK) ?? 10;
 
+    this.logger.log(
+      `[Chat] chat_started userId=${request.userId} workspaceId=${request.workspaceId} ` +
+        `conversationId=${request.conversationId ?? 'new'} provider=${provider}`,
+    );
+
     // ── Step 1: Resolve / create conversation ────────────────
     let conversationId = request.conversationId;
-    if (!conversationId) {
+    if (conversationId) {
+      // Validate that conversation exists, is active, and belongs to user & workspace
+      await this.conversationService.assertOwnership(
+        conversationId,
+        request.userId,
+        request.workspaceId,
+      );
+    } else {
       const conv = await this.conversationService.createConversation({
         userId: request.userId,
         workspaceId: request.workspaceId,
+        repositoryId: request.repositoryIds?.[0],
       });
       conversationId = conv.id;
-      // Auto-title from first query (no extra AI call).
+      // Auto-title from first query — no LLM call needed.
       const autoTitle = this.conversationService.buildAutoTitle(request.query);
       await this.conversationService.updateTitle(
         conversationId,
         request.userId,
         autoTitle,
+      );
+      this.logger.log(
+        `[Chat] conversation_created id=${conversationId} title="${autoTitle}"`,
       );
     }
 
@@ -83,15 +100,25 @@ export class ConversationOrchestratorService {
       tokenCount: this.tokenBudget.estimate(request.query),
     });
 
-    // ── Step 3: Retrieve conversation history ────────────────
+    this.logger.log(
+      `[Chat] message_created role=USER messageId=${userMessage.id} conversationId=${conversationId}`,
+    );
+
+    // ── Step 3: Load conversation history (bounded) ───────────
     const history = await this.conversationService.getHistory(
       conversationId,
       CHAT_DEFAULTS.maxHistoryMessages,
     );
 
-    // ── Step 4: Execute hybrid search ────────────────────────
+    // ── Step 4: Execute hybrid search (RAG) ──────────────────
     let hits: RankedSearchHit[] = [];
+    const ragStarted = Date.now();
+
     try {
+      this.logger.log(
+        `[Chat] rag_started conversationId=${conversationId} topK=${topK}`,
+      );
+
       const searchResult = await this.searchService.search(request.userId, {
         workspaceId: request.workspaceId,
         query: request.query,
@@ -103,12 +130,23 @@ export class ConversationOrchestratorService {
         pageSize: topK,
         skipCache: false,
       });
+
       hits = searchResult.results;
-    } catch (error) {
+      const ragLatencyMs = Date.now() - ragStarted;
+
+      this.logger.log(
+        `[Chat] rag_completed conversationId=${conversationId} ` +
+          `chunks=${hits.length} latencyMs=${ragLatencyMs}`,
+      );
+    } catch (searchError) {
+      const ragLatencyMs = Date.now() - ragStarted;
       this.logger.warn(
-        `Search failed — proceeding without context: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `[Chat] rag_failed conversationId=${conversationId} ` +
+          `latencyMs=${ragLatencyMs} error=${
+            searchError instanceof Error
+              ? searchError.message
+              : String(searchError)
+          } — proceeding with no context`,
       );
     }
 
@@ -122,7 +160,12 @@ export class ConversationOrchestratorService {
       provider,
     });
 
-    // ── Step 6: Call AI with fallback ────────────────────────
+    // ── Step 6: Call AI provider with fallback ────────────────
+    this.logger.log(
+      `[Chat] ai_generation_started conversationId=${conversationId} provider=${provider}`,
+    );
+    const aiStarted = Date.now();
+
     const aiResult = await this.providerFallback.generateWithFallback(
       {
         provider,
@@ -131,6 +174,14 @@ export class ConversationOrchestratorService {
         temperature: request.temperature ?? 0.2,
       },
       { workspaceId: request.workspaceId },
+    );
+
+    const aiLatencyMs = Date.now() - aiStarted;
+
+    this.logger.log(
+      `[Chat] ai_generation_completed conversationId=${conversationId} ` +
+        `provider=${aiResult.provider} model=${aiResult.model} ` +
+        `fallback=${aiResult.fallbackUsed} latencyMs=${aiLatencyMs}`,
     );
 
     if (aiResult.allCloudProvidersFailed && !aiResult.rawText) {
@@ -144,7 +195,9 @@ export class ConversationOrchestratorService {
     // ── Step 7: Parse and format answer ──────────────────────
     const parsed = this.formatter.parseAnswer(aiResult.rawText);
 
-    // ── Step 8: Persist assistant message ────────────────────
+    // ── Step 8: Persist assistant message + AIResponse ────────
+    // These are tightly coupled: assistant message must exist before
+    // AIResponse and citations can reference it.
     const assistantMessage = await this.conversationService.addMessage({
       conversationId,
       role: MessageRole.ASSISTANT,
@@ -152,7 +205,10 @@ export class ConversationOrchestratorService {
       tokenCount: this.tokenBudget.estimate(parsed.answer),
     });
 
-    // ── Step 8b: Persist AIResponse row ──────────────────────
+    this.logger.log(
+      `[Chat] message_created role=ASSISTANT messageId=${assistantMessage.id} conversationId=${conversationId}`,
+    );
+
     const aiResponseId = await this.loggingService.createAiResponse({
       messageId: assistantMessage.id,
       provider: aiResult.provider,
@@ -161,16 +217,44 @@ export class ConversationOrchestratorService {
       latencyMs: aiResult.latencyMs,
     });
 
-    // ── Step 9: Build & persist citations ────────────────────
-    const citations = await this.citationBuilder.persistCitations({
-      messageId: assistantMessage.id,
-      hits,
-      aiResponseId,
-    });
+    // ── Step 9: Persist citations ─────────────────────────────
+    let persistedCitations = this.citationBuilder.buildRefs(hits);
+
+    if (hits.length > 0) {
+      try {
+        const citationResult = await this.citationBuilder.persistCitations({
+          messageId: assistantMessage.id,
+          hits,
+          aiResponseId,
+        });
+
+        persistedCitations = citationResult.citations;
+
+        if (!citationResult.allPersisted) {
+          this.logger.warn(
+            `[Chat] citation_persisted_partial messageId=${assistantMessage.id} ` +
+              `failureCount=${citationResult.failureCount}`,
+          );
+        } else {
+          this.logger.log(
+            `[Chat] citation_persisted messageId=${assistantMessage.id} count=${persistedCitations.length}`,
+          );
+        }
+      } catch (citationError) {
+        // Citations failed entirely — log but do not block the response.
+        this.logger.error(
+          `[Chat] citation_persist_failed messageId=${assistantMessage.id}: ${
+            citationError instanceof Error
+              ? citationError.message
+              : String(citationError)
+          }`,
+        );
+      }
+    }
 
     const sources = this.citationBuilder.buildSources(hits);
 
-    // ── Step 10: Log usage (fire-and-forget) ─────────────────
+    // ── Step 10: Log usage + prompt history (fire-and-forget) ─
     void this.loggingService.logModelUsage({
       workspaceId: request.workspaceId,
       conversationId,
@@ -190,6 +274,11 @@ export class ConversationOrchestratorService {
       userPrompt: builtPrompt.userPrompt,
     });
 
+    this.logger.log(
+      `[Chat] chat_stream_completed conversationId=${conversationId} ` +
+        `executionTimeMs=${executionTimeMs} citations=${persistedCitations.length}`,
+    );
+
     // ── Return formatted ChatResponse ────────────────────────
     return this.formatter.format({
       conversationId,
@@ -197,7 +286,7 @@ export class ConversationOrchestratorService {
       rawText: aiResult.rawText,
       provider: aiResult.provider,
       model: aiResult.model,
-      citations,
+      citations: persistedCitations,
       sources,
       executionTimeMs,
       promptVersion: builtPrompt.promptVersion,
