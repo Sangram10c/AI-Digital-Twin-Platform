@@ -8,12 +8,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   MessageEvent,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Patch,
   Post,
@@ -327,5 +329,33 @@ export class ChatController {
     @CurrentDeveloper() developer: AuthenticatedDeveloper,
   ) {
     return this.conversationService.unpinConversation(id, developer.id);
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // GET /api/v1/chat/conversations/:id/messages
+  // Returns paginated messages for a conversation.
+  // ──────────────────────────────────────────────────────────
+
+  @Get('conversations/:id/messages')
+  @ApiOperation({ summary: 'List messages for a conversation (paginated)' })
+  @ApiParam({ name: 'id', description: 'Conversation UUID', type: String })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of messages in chronological order.',
+  })
+  @ApiResponse({ status: 403, description: 'Access denied.' })
+  @ApiResponse({ status: 404, description: 'Conversation not found.' })
+  async listMessages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+    @CurrentDeveloper() developer: AuthenticatedDeveloper,
+  ) {
+    return this.conversationService.listMessages({
+      conversationId: id,
+      userId: developer.id,
+      page,
+      limit: Math.min(limit, 100),
+    });
   }
 }

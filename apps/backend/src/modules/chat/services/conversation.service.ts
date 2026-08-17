@@ -31,11 +31,24 @@ export class ConversationService {
     repositoryId?: string;
     title?: string;
   }) {
+    let validRepositoryId: string | null = null;
+    if (params.repositoryId) {
+      const repo = await this.prisma.repository.findFirst({
+        where: {
+          id: params.repositoryId,
+          workspaceId: params.workspaceId,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      validRepositoryId = repo?.id ?? null;
+    }
+
     const conversation = await this.prisma.conversation.create({
       data: {
         userId: params.userId,
         workspaceId: params.workspaceId,
-        repositoryId: params.repositoryId ?? null,
+        repositoryId: validRepositoryId,
         title: params.title ?? null,
       },
     });
@@ -55,7 +68,7 @@ export class ConversationService {
       },
     });
 
-    if (!conversation) {
+    if (!conversation || conversation.deletedAt) {
       throw new NotFoundException(`Conversation ${id} not found`);
     }
     if (conversation.userId !== userId) {
@@ -207,20 +220,71 @@ export class ConversationService {
     }));
   }
 
+  /**
+   * Paginated message listing for a conversation (ownership enforced).
+   */
+  async listMessages(params: {
+    conversationId: string;
+    userId: string;
+    page: number;
+    limit: number;
+  }) {
+    // Assert ownership first.
+    await this.assertOwnership(params.conversationId, params.userId);
+
+    const skip = (params.page - 1) * params.limit;
+    const [messages, total] = await Promise.all([
+      this.prisma.message.findMany({
+        where: { conversationId: params.conversationId },
+        orderBy: { sequenceNumber: 'asc' },
+        skip,
+        take: params.limit,
+        select: {
+          id: true,
+          role: true,
+          content: true,
+          sequenceNumber: true,
+          tokenCount: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.message.count({
+        where: { conversationId: params.conversationId },
+      }),
+    ]);
+
+    return {
+      data: messages,
+      total,
+      page: params.page,
+      limit: params.limit,
+      hasMore: skip + messages.length < total,
+    };
+  }
+
   // ──────────────────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────────────────
 
-  private async assertOwnership(conversationId: string, userId: string) {
+  async assertOwnership(
+    conversationId: string,
+    userId: string,
+    workspaceId?: string,
+  ): Promise<void> {
     const row = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
-      select: { userId: true },
+      select: { userId: true, workspaceId: true, deletedAt: true },
     });
-    if (!row) {
+    if (!row || row.deletedAt) {
       throw new NotFoundException(`Conversation ${conversationId} not found`);
     }
     if (row.userId !== userId) {
       throw new ForbiddenException('Access denied to this conversation');
+    }
+    if (workspaceId && row.workspaceId !== workspaceId) {
+      throw new ForbiddenException(
+        'Conversation does not belong to the specified workspace',
+      );
     }
   }
 
