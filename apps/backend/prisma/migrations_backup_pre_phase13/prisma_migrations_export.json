@@ -1,0 +1,12 @@
+[
+  {
+    "id": "c537d639-50bf-4a01-bc3e-98072ae65f2d",
+    "checksum": "4a3dddcd215cde32330d9a7461cdfdd2cbdda6ed90725dbc9066b3db0584efad",
+    "finished_at": null,
+    "migration_name": "20260703072006_init",
+    "logs": "A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve\n\nMigration name: 20260703072006_init\n\nDatabase error code: 0A000\n\nDatabase error:\nERROR: extension \"vector\" is not available\nDETAIL: Could not open extension control file \"C:/Program Files/PostgreSQL/16/share/extension/vector.control\": No such file or directory.\nHINT: The extension must first be installed on the system where PostgreSQL is running.\n\nDbError { severity: \"ERROR\", parsed_severity: Some(Error), code: SqlState(E0A000), message: \"extension \\\"vector\\\" is not available\", detail: Some(\"Could not open extension control file \\\"C:/Program Files/PostgreSQL/16/share/extension/vector.control\\\": No such file or directory.\"), hint: Some(\"The extension must first be installed on the system where PostgreSQL is running.\"), position: None, where_: None, schema: None, table: None, column: None, datatype: None, constraint: None, file: Some(\"extension.c\"), line: Some(639), routine: Some(\"parse_extension_control_file\") }\n\n   0: sql_schema_connector::apply_migration::apply_script\n           with migration_name=\"20260703072006_init\"\n             at schema-engine\\connectors\\sql-schema-connector\\src\\apply_migration.rs:113\n   1: schema_commands::commands::apply_migrations::Applying migration\n           with migration_name=\"20260703072006_init\"\n             at schema-engine\\commands\\src\\commands\\apply_migrations.rs:95\n   2: schema_core::state::ApplyMigrations\n             at schema-engine\\core\\src\\state.rs:255",
+    "rolled_back_at": null,
+    "started_at": "2026-07-03T07:20:06.277Z",
+    "applied_steps_count": 0
+  }
+]

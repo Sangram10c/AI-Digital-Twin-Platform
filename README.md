@@ -30,34 +30,36 @@ Instead of hunting across GitHub, docs, pull requests, and commits, developers a
 
 ### Current project phase
 
-|                       |                                                                               |
-| --------------------- | ----------------------------------------------------------------------------- |
-| **Phase**             | Phase 2 — Core Features & Integrations                                        |
-| **Just completed**    | Doc **12** AI / RAG Architecture · Doc **13** Search Engine Design            |
-| **Shipped on branch** | `Hybrid-Search-Engine` — hybrid retrieval API + source-code ingestion for RAG |
-| **Now in progress**   | Doc **14** — Background Job Architecture                                      |
-| **Overall docs**      | ~56% (13 / 24) — see [`CURRENT_STATUS.md`](./CURRENT_STATUS.md)               |
+|                       |                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------- |
+| **Phase**             | Phase 13 — Analytics & Insights ✅ Complete                                           |
+| **Just completed**    | Analytics & Insights — 8 metric domains, BullMQ aggregation, Redis caching, snapshots |
+| **Shipped on branch** | `ANALYTICS-INSIGHTS`                                                                  |
+| **Now in progress**   | Phase 14 — Frontend Dashboard                                                         |
 
-**New design & implementation notes**
+**Recent implementation notes**
 
-- [Search Engine Design (13)](./docs/13-search-engine-design/README.md) — hybrid / keyword / semantic / ranking
+- [AI Chat & Conversations](./docs/backend/ai-chat.md) — 10-step RAG pipeline, SSE streaming, conversation memory
+- [Analytics & Insights](./docs/backend/analytics.md) — 8 metric domains, BullMQ workers, Redis caching
 - [Hybrid Search Engine (backend)](./docs/backend/hybrid-search-engine.md) — `/api/v1/search` (vector + FTS + RRF ranking)
-- [Source-code ingestion](./docs/backend/source-code-ingestion.md) — symbol-aware `.ts`/`.js` chunks for accurate file citations
+- [Source-code ingestion](./docs/backend/source-code-ingestion.md) — symbol-aware `.ts`/`.js` chunks for code-aware RAG citations
 - [Embedding pipeline](./docs/backend/embedding-pipeline.md) · [AI / RAG (12)](./docs/12-ai-rag-architecture/README.md)
 
 ### Key capabilities
 
-| Capability              | Description                                                                 |
-| ----------------------- | --------------------------------------------------------------------------- |
-| Multi-provider AI       | OpenAI, Anthropic, Gemini, Groq, Voyage, and Ollama / mock providers        |
-| RAG pipeline            | Chunking, embeddings, retrieval, and grounded answers (chat next)           |
-| Hybrid search           | pgvector semantic + PostgreSQL FTS, merged with ranking & citations         |
-| Source-code knowledge   | Prioritized `.ts`/`.js` ingest so search can cite real implementation files |
-| Vector storage          | PostgreSQL + pgvector for embedding upsert and similarity lookup            |
-| GitHub integration      | OAuth, repo sync, webhooks, incremental updates                             |
-| Multi-tenant workspaces | Organizations, workspaces, and RBAC-oriented identity                       |
-| Real-time updates       | Socket.IO for sync progress and notifications                               |
-| VS Code extension       | IDE surface (scaffolded; deeper integration on the roadmap)                 |
+| Capability              | Description                                                                   |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| Multi-provider AI       | OpenAI, Anthropic, Gemini, Groq, Voyage AI, and Ollama (local/mock)           |
+| AI Chat & RAG           | 10-step RAG pipeline: retrieve → prompt → generate → cite (SSE streaming)     |
+| Conversation Memory     | Selective long-term memory with importance scoring and TTL expiry             |
+| Analytics & Insights    | 8 metric domains (repo, AI, search, knowledge, conversation, job, RAG, WS)    |
+| Hybrid search           | pgvector semantic + PostgreSQL FTS, RRF ranking, Redis cache, citations       |
+| Source-code knowledge   | Prioritized `.ts`/`.js` ingest so search can cite real implementation files   |
+| Vector storage          | PostgreSQL + pgvector (HNSW index) for embedding upsert and similarity search |
+| GitHub integration      | OAuth, repo sync, webhooks, incremental updates                               |
+| Multi-tenant workspaces | Organizations, workspaces, and RBAC-oriented identity                         |
+| Real-time updates       | Socket.IO for sync progress and notifications                                 |
+| VS Code extension       | IDE surface (scaffolded; deeper integration on the roadmap)                   |
 
 ---
 
@@ -113,14 +115,14 @@ Live status and task tracking: [`CURRENT_STATUS.md`](./CURRENT_STATUS.md).
 
 Modular monolith (microservice-ready): deployable apps share typed packages.
 
-| Layer       | Role                                                                        |
-| ----------- | --------------------------------------------------------------------------- |
-| **Clients** | Next.js web app, VS Code extension                                          |
-| **API**     | NestJS REST API (`/api/v1`), health probes, Swagger in non-prod             |
-| **Workers** | BullMQ jobs for sync, webhooks, knowledge, embeddings                       |
-| **Data**    | PostgreSQL 17 + pgvector, Redis 7                                           |
-| **AI**      | Provider abstraction + RAG (chunk → embed → **hybrid retrieve** → generate) |
-| **Search**  | Query processing, vector + keyword search, ranking, cache, metrics          |
+| Layer       | Role                                                                            |
+| ----------- | ------------------------------------------------------------------------------- |
+| **Clients** | Next.js web app, VS Code extension                                              |
+| **API**     | NestJS REST API (`/api/v1`), health probes, Swagger in non-prod                 |
+| **Workers** | BullMQ jobs for sync, webhooks, knowledge, embeddings, analytics, AI extraction |
+| **Data**    | PostgreSQL 17 + pgvector + pg_trgm, Redis ≥ 5.0                                 |
+| **AI**      | Provider abstraction + RAG (chunk → embed → hybrid retrieve → generate → cite)  |
+| **Search**  | Query processing, vector + FTS search, RRF ranking, Redis cache, metrics        |
 
 Details: [System Architecture](./docs/05-system-architecture/README.md) · [High-level diagram](./docs/05-system-architecture/02-high-level-architecture.md)
 
@@ -132,7 +134,7 @@ Details: [System Architecture](./docs/05-system-architecture/README.md) · [High
 | ------------ | ------------------------------------------------------------------------------- |
 | **Frontend** | Next.js 16, React 19, TypeScript, Tailwind CSS, TanStack Query, Zustand, Zod    |
 | **Backend**  | NestJS 11, Prisma, PostgreSQL, pgvector, Redis, BullMQ, Socket.IO, Passport/JWT |
-| **AI**       | OpenAI, Anthropic, Google Gemini, Ollama                                        |
+| **AI**       | OpenAI, Anthropic, Google Gemini, Groq, Voyage AI, Ollama                       |
 | **Monorepo** | npm workspaces (`apps/*`, `packages/*`)                                         |
 | **DevOps**   | Docker Compose, GitHub Actions, ESLint, Prettier, Husky, Commitlint             |
 | **Testing**  | Jest (backend), Playwright (frontend e2e planned)                               |
@@ -164,7 +166,7 @@ AI-Digital-Twin-Platform/
 └── CONTRIBUTING.md         # Contributor setup & standards
 ```
 
-Backend modules in tree include identity, workspaces, GitHub OAuth/webhooks, repository sync, knowledge processing, embeddings, **hybrid search**, and source-code ingestion. See [`apps/backend/README.md`](./apps/backend/README.md).
+Backend modules: identity, workspaces, GitHub OAuth/webhooks, repository sync, knowledge processing, heuristics, AI extraction, embeddings, **hybrid search**, source-code ingestion, **AI chat & RAG**, conversation memory, notifications, timeline, and **analytics**. See [`apps/backend/README.md`](./apps/backend/README.md).
 
 ---
 
@@ -279,7 +281,7 @@ Primary index: [`docs/README.md`](./docs/README.md)
 | 11    | [GitHub Integration](./docs/11-github-integration/README.md)                                                                                                                                     | Sync, webhooks, rate limits      |
 | 12    | [AI / RAG](./docs/12-ai-rag-architecture/README.md) ✅                                                                                                                                           | Chunking, embeddings, retrieval  |
 | 13    | [Search Engine](./docs/13-search-engine-design/README.md) ✅                                                                                                                                     | Hybrid keyword + semantic search |
-| 14    | [Background Jobs](./docs/14-background-jobs/README.md) 🟡                                                                                                                                        | Queues and workers (current)     |
+| 14    | [Background Jobs](./docs/14-background-jobs/README.md) ✅                                                                                                                                        | BullMQ queues and workers        |
 | 15    | [Security](./docs/15-security/README.md)                                                                                                                                                         | AuthZ, secrets, throttling       |
 | 16–17 | [Frontend](./docs/16-frontend-architecture/README.md) / [Backend](./docs/17-backend-architecture/README.md)                                                                                      | App architecture                 |
 | 18–20 | [Folder Structure](./docs/18-folder-structure/README.md) · [Coding Standards](./docs/19-coding-standards/README.md) · [Testing](./docs/20-testing-strategy/README.md)                            | Engineering practices            |
@@ -295,19 +297,22 @@ Agent / contributor rules: [`AGENT.md`](./AGENT.md) · [`CONTRIBUTING.md`](./CON
 
 Summarized from [`ROADMAP.md`](./ROADMAP.md) and [`CURRENT_STATUS.md`](./CURRENT_STATUS.md):
 
-| Phase                | Focus                                                             | Status                                   |
-| -------------------- | ----------------------------------------------------------------- | ---------------------------------------- |
-| **1 — Foundation**   | Monorepo, Nest/Next skeletons, Prisma, auth, CI, Docker           | Done                                     |
-| **2 — Core**         | Workspaces, GitHub sync, knowledge, embeddings, **hybrid search** | In progress (docs 01–13 ✅ · 14 next)    |
-| **3 — Intelligence** | Chat/RAG answers, memory, timeline, richer ranking                | Partial (retrieve done; answer gen next) |
-| **4 — Integrations** | Deeper GitHub, Google Workspace, VS Code                          | Partial (GitHub OAuth + webhooks + sync) |
-| **5 — Enterprise**   | Multi-tenant hardening, analytics, admin, audit, K8s              | Planned                                  |
+| Phase                | Focus                                                                  | Status                     |
+| -------------------- | ---------------------------------------------------------------------- | -------------------------- |
+| **1 — Foundation**   | Monorepo, Nest/Next skeletons, Prisma, auth, CI, Docker                | ✅ Complete                |
+| **2 — Core**         | Identity, workspaces, GitHub sync, knowledge, embeddings, search       | ✅ Complete (Phases 01–10) |
+| **3 — Intelligence** | Hybrid AI pipeline, chat/RAG, conversation memory, analytics           | ✅ Complete (Phases 11–13) |
+| **4 — Frontend**     | Analytics dashboard, chat UI, workspace management, repository browser | ➡️ Phase 14 — In Progress  |
+| **5 — Production**   | K8s, CI/CD hardening, monitoring, multi-region deployment              | ⬜ Phase 15 — Planned      |
 
-**Recently delivered (design + backend):**
+**Shipped in backend (Phases 01–13):**
 
-- Embedding pipeline (pgvector, multi-provider, BullMQ)
-- AI knowledge extraction / hybrid digest pipeline
-- Hybrid Search Engine (`POST /api/v1/search`) + source-code ingestion for code-aware RAG
+- Identity, workspaces, GitHub OAuth + webhooks + repository sync
+- Knowledge processing, heuristic extraction, AI knowledge extraction, embedding pipeline
+- Hybrid Search Engine (`POST /api/v1/search`) with pgvector + FTS + RRF ranking
+- AI Chat (`POST /api/v1/chat`) — 10-step RAG pipeline with SSE streaming and citations
+- Conversation memory, notifications, and timeline
+- Analytics & Insights — 8 metric domains, BullMQ aggregation, Redis caching, snapshot storage
 
 Track day-to-day progress in [`CURRENT_STATUS.md`](./CURRENT_STATUS.md).
 

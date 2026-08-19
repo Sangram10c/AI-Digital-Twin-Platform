@@ -1,2 +1,1 @@
-// Analytics Constants
-// Export constants here as they are created
+export * from './analytics.constants';

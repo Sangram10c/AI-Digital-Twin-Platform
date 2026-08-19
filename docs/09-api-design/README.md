@@ -57,20 +57,103 @@ REST API design standards, versioning, authentication headers, and shared respon
 
 ## Endpoints Overview
 
-| Method | Endpoint         | Description           |
-| ------ | ---------------- | --------------------- |
-| POST   | /auth/login      | User login            |
-| POST   | /auth/register   | User registration     |
-| GET    | /auth/profile    | Get current user      |
-| GET    | /users           | List users            |
-| GET    | /workspaces      | List workspaces       |
-| GET    | /github/connect  | Start GitHub OAuth    |
-| GET    | /github/accounts | List GitHub accounts  |
-| POST   | /webhooks/github | GitHub webhook ingest |
-| GET    | /webhooks/events | List webhook events   |
-| GET    | /health          | Health check          |
+### Authentication & Identity
 
-See [github.md](./github.md) for full GitHub/webhook API tables.
+| Method | Endpoint         | Description              |
+| ------ | ---------------- | ------------------------ |
+| POST   | `/auth/login`    | User login               |
+| POST   | `/auth/register` | User registration        |
+| POST   | `/auth/refresh`  | Refresh JWT access token |
+| POST   | `/auth/logout`   | Revoke session           |
+| GET    | `/auth/profile`  | Get current user profile |
+| PATCH  | `/auth/profile`  | Update profile           |
+| GET    | `/auth/google`   | Google OAuth start       |
+| GET    | `/auth/github`   | GitHub OAuth start       |
+
+### Workspaces
+
+| Method | Endpoint                          | Description          |
+| ------ | --------------------------------- | -------------------- |
+| GET    | `/workspaces`                     | List user workspaces |
+| POST   | `/workspaces`                     | Create workspace     |
+| GET    | `/workspaces/:id`                 | Get workspace        |
+| PATCH  | `/workspaces/:id`                 | Update workspace     |
+| DELETE | `/workspaces/:id`                 | Archive workspace    |
+| GET    | `/workspaces/:id/members`         | List members         |
+| POST   | `/workspaces/:id/members`         | Add member           |
+| DELETE | `/workspaces/:id/members/:userId` | Remove member        |
+
+### GitHub Integration
+
+| Method | Endpoint                          | Description                    |
+| ------ | --------------------------------- | ------------------------------ |
+| GET    | `/github/connect`                 | Start GitHub OAuth             |
+| GET    | `/github/callback`                | OAuth callback                 |
+| GET    | `/github/accounts`                | List connected GitHub accounts |
+| DELETE | `/github/accounts/:id`            | Disconnect account             |
+| POST   | `/webhooks/github`                | GitHub webhook ingest          |
+| GET    | `/workspaces/:id/webhooks/events` | List webhook events            |
+
+### Repositories
+
+| Method | Endpoint                                        | Description        |
+| ------ | ----------------------------------------------- | ------------------ |
+| GET    | `/workspaces/:id/repositories`                  | List repositories  |
+| POST   | `/workspaces/:id/repositories`                  | Import repository  |
+| GET    | `/workspaces/:id/repositories/:repoId`          | Get repository     |
+| POST   | `/workspaces/:id/repositories/:repoId/sync`     | Trigger sync       |
+| GET    | `/workspaces/:id/repositories/:repoId/commits`  | List commits       |
+| GET    | `/workspaces/:id/repositories/:repoId/branches` | List branches      |
+| GET    | `/workspaces/:id/repositories/:repoId/prs`      | List pull requests |
+| GET    | `/workspaces/:id/repositories/:repoId/issues`   | List issues        |
+
+### Knowledge & Search
+
+| Method | Endpoint          | Description                  |
+| ------ | ----------------- | ---------------------------- |
+| POST   | `/search`         | Hybrid search (vector + FTS) |
+| GET    | `/search/history` | Search history for workspace |
+| GET    | `/search/saved`   | Saved searches               |
+| POST   | `/search/saved`   | Save a search                |
+
+### AI Chat & Conversations
+
+| Method | Endpoint                           | Description                     |
+| ------ | ---------------------------------- | ------------------------------- |
+| POST   | `/chat`                            | Synchronous chat (RAG)          |
+| POST   | `/chat/stream`                     | SSE streaming chat (POST body)  |
+| GET    | `/chat/stream`                     | SSE streaming chat (GET params) |
+| GET    | `/chat/conversations`              | List conversations (paginated)  |
+| GET    | `/chat/conversations/:id`          | Get conversation with messages  |
+| GET    | `/chat/conversations/:id/messages` | Get paginated messages          |
+| PATCH  | `/chat/conversations/:id`          | Rename conversation             |
+| DELETE | `/chat/conversations/:id`          | Soft-delete conversation        |
+| POST   | `/chat/conversations/:id/pin`      | Pin conversation                |
+| DELETE | `/chat/conversations/:id/pin`      | Unpin conversation              |
+
+### Analytics
+
+| Method | Endpoint                                 | Description                   |
+| ------ | ---------------------------------------- | ----------------------------- |
+| POST   | `/workspaces/:id/analytics/aggregate`    | Trigger analytics aggregation |
+| GET    | `/workspaces/:id/analytics/repository`   | Repository metrics            |
+| GET    | `/workspaces/:id/analytics/ai`           | AI usage metrics              |
+| GET    | `/workspaces/:id/analytics/search`       | Search metrics                |
+| GET    | `/workspaces/:id/analytics/knowledge`    | Knowledge base metrics        |
+| GET    | `/workspaces/:id/analytics/conversation` | Conversation metrics          |
+| GET    | `/workspaces/:id/analytics/job`          | Background job metrics        |
+| GET    | `/workspaces/:id/analytics/rag`          | RAG pipeline metrics          |
+| GET    | `/workspaces/:id/analytics/workspace`    | Workspace-level summary       |
+
+### Platform
+
+| Method | Endpoint  | Description  |
+| ------ | --------- | ------------ |
+| GET    | `/health` | Health check |
+| GET    | `/ready`  | Readiness    |
+| GET    | `/live`   | Liveness     |
+
+See [github.md](./github.md) and [repositories.md](./repositories.md) for detailed per-resource endpoint tables.
 
 ## HTTP Status Codes
 
@@ -116,7 +199,7 @@ See [github.md](./github.md) for full GitHub/webhook API tables.
 
 ## Last Updated
 
-2026-07-09
+2026-08-19
 
 ## Next Document
 

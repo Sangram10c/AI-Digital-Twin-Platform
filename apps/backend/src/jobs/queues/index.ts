@@ -5,4 +5,5 @@ export const QUEUES = {
   NOTIFICATION: 'notification',
   EMAIL: 'email',
   AI_PROCESSING: 'ai-processing',
+  ANALYTICS: 'analytics',
 } as const;

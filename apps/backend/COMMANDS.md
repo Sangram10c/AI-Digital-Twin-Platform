@@ -23,21 +23,24 @@ cd C:\AI-Digital-Twin-Platform\apps\backend
 
 BullMQ needs Redis **≥ 5.0**.
 
-This machine uses a free local Redis 5.0.14 install:
+This machine uses a local Redis 5.0+ install:
 
 | Item         | Value                      |
 | ------------ | -------------------------- |
 | Install path | `C:\Users\admin\redis5`    |
-| Port         | **6380**                   |
-| URL (`.env`) | `redis://localhost:6380/0` |
+| Port         | **6379** (matches `.env`)  |
+| URL (`.env`) | `redis://localhost:6379/0` |
 
-> There may also be an old Redis **3** Windows service on port **6379**. Do **not** point the backend at that — BullMQ will fail with `Redis version needs to be greater or equal than 5.0.0`.
+> **Note:** If a Redis 3.x Windows service is also running on port 6379, BullMQ will fail with
+> `Redis version needs to be greater or equal than 5.0.0`.
+> In that case, stop the old service and start Redis 5 instead (see commands below),
+> or change the Redis 5 port to 6380 and update `REDIS_URL` and `REDIS_PORT` in `.env` accordingly.
 
 ### Start Redis 5
 
 ```powershell
 Start-Process -FilePath "C:\Users\admin\redis5\redis-server.exe" `
-  -ArgumentList "C:\Users\admin\redis5\redis.windows.conf","--port","6380" `
+  -ArgumentList "C:\Users\admin\redis5\redis.windows.conf","--port","6379" `
   -WorkingDirectory "C:\Users\admin\redis5" `
   -WindowStyle Hidden
 ```
@@ -45,13 +48,13 @@ Start-Process -FilePath "C:\Users\admin\redis5\redis-server.exe" `
 ### Check Redis
 
 ```powershell
-C:\Users\admin\redis5\redis-cli.exe -p 6380 ping
+C:\Users\admin\redis5\redis-cli.exe -p 6379 ping
 ```
 
 Expected: `PONG`
 
 ```powershell
-C:\Users\admin\redis5\redis-cli.exe -p 6380 info server | Select-String "redis_version"
+C:\Users\admin\redis5\redis-cli.exe -p 6379 info server | Select-String "redis_version"
 ```
 
 Expected: `redis_version:5.0.14.1` (or similar 5.x)

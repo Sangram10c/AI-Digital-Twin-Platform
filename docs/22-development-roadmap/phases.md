@@ -1,86 +1,110 @@
-# Phases
+# Development Roadmap — Phases
 
-## Purpose
+> **Canonical roadmap:** [`ROADMAP.md`](../../ROADMAP.md)
+>
+> This document provides additional detail on each phase. The phase structure and names in this file match `ROADMAP.md` exactly.
 
-<!-- Describe the purpose of this document. -->
+---
 
-## Scope
+## Phase 1 — Foundation ✅ Complete
 
-<!-- Define the boundaries and context of this document. -->
+**Goal:** Establish the monorepo, infrastructure, and development toolchain.
 
-## Overview
+| Deliverable                                    | Status |
+| ---------------------------------------------- | ------ |
+| npm workspaces monorepo (`apps/`, `packages/`) | ✅     |
+| NestJS backend skeleton                        | ✅     |
+| Next.js 16 App Router frontend skeleton        | ✅     |
+| Prisma + PostgreSQL database setup             | ✅     |
+| JWT + Passport authentication                  | ✅     |
+| GitHub Actions CI/CD                           | ✅     |
+| Docker Compose (Postgres + Redis)              | ✅     |
+| ESLint, Prettier, Husky, Commitlint            | ✅     |
+| pgvector + pg_trgm extension setup             | ✅     |
 
-<!-- Provide a high-level summary. -->
+---
 
-## Responsibilities
+## Phase 2 — Core Features ✅ Complete
 
-<!-- List key responsibilities, components, or actors. -->
+**Goal:** Implement identity, workspace, GitHub integration, repository sync, and knowledge pipeline.
 
-## Design
+| Deliverable                                                                                           | Status |
+| ----------------------------------------------------------------------------------------------------- | ------ |
+| Identity module (users, sessions, refresh tokens, OAuth tokens)                                       | ✅     |
+| Auth module (JWT login, register, token refresh)                                                      | ✅     |
+| Workspace management + RBAC                                                                           | ✅     |
+| GitHub OAuth + multi-account support                                                                  | ✅     |
+| Webhook ingestion (GitHub events → BullMQ)                                                            | ✅     |
+| Repository sync (branches, commits, PRs, issues, releases, tags)                                      | ✅     |
+| Knowledge processing (normalize → chunk → BullMQ queue)                                               | ✅     |
+| Documents and uploads management                                                                      | ✅     |
+| Notifications foundation                                                                              | ✅     |
+| Background job architecture (BullMQ queues: embedding, notification, email, ai-processing, analytics) | ✅     |
 
-# Development Roadmap
+---
 
-## Phase 1: Foundation (Current)
+## Phase 3 — Intelligence ✅ Complete
 
-- [x] Project architecture
-- [x] Monorepo setup
-- [x] Docker infrastructure
-- [x] CI/CD pipelines
-- [x] Documentation
+**Goal:** Implement the complete AI knowledge extraction → embedding → search → chat pipeline.
 
-## Phase 2: Core Backend
+| Deliverable                                                                    | Status |
+| ------------------------------------------------------------------------------ | ------ |
+| Heuristic extraction (deterministic metadata without LLM)                      | ✅     |
+| AI knowledge extraction digest pipeline                                        | ✅     |
+| Hybrid AI pipeline (heuristics → digests → AI → embeddings)                    | ✅     |
+| Embedding generation (pgvector, multi-provider, BullMQ, checksum skip)         | ✅     |
+| Source-code ingestion (`.ts`/`.js` symbol chunks for code-aware RAG)           | ✅     |
+| Hybrid Search Engine (vector + FTS + RRF ranking, Redis cache, metrics)        | ✅     |
+| AI Chat — 10-step RAG pipeline (retrieve → prompt → generate → cite)           | ✅     |
+| SSE streaming chat                                                             | ✅     |
+| Conversation management (history, pin, archive, soft-delete)                   | ✅     |
+| Conversation Memory (selective long-term memory with TTL + importance scoring) | ✅     |
+| Timeline                                                                       | ✅     |
+| Analytics & Insights (8 metric domains, BullMQ aggregation, Redis caching)     | ✅     |
 
-- [ ] Database schema & migrations
-- [ ] Authentication (JWT + OAuth)
-- [ ] User management
-- [ ] Organization & workspace CRUD
-- [ ] Health check endpoints
+---
 
-## Phase 3: Frontend Foundation
+## Phase 4 — Frontend Dashboard ➡️ Current
 
-- [ ] Design system (shadcn/ui)
-- [ ] Authentication UI
-- [ ] Dashboard layout
-- [ ] Navigation & routing
+**Goal:** Build the user-facing frontend for all implemented backend capabilities.
 
-## Phase 4: Document Management
+| Deliverable                                        | Status |
+| -------------------------------------------------- | ------ |
+| Authentication UI (sign in, register, OAuth flows) | ⬜     |
+| Workspace management UI                            | ⬜     |
+| GitHub connection and repository browser           | ⬜     |
+| AI Chat interface with SSE streaming               | ⬜     |
+| Hybrid search interface                            | ⬜     |
+| Analytics dashboard (8 metric domains)             | ⬜     |
+| Conversation history and management UI             | ⬜     |
+| Notifications UI                                   | ⬜     |
+| Settings management                                | ⬜     |
+| Real-time sync progress indicator                  | ⬜     |
 
-- [ ] Document upload & storage
-- [ ] Document CRUD
-- [ ] File type support (PDF, Markdown, Code)
+---
 
-## Phase 5: AI Integration
+## Phase 5 — Production Deployment ⬜ Planned
 
-- [ ] AI provider abstraction
-- [ ] Chat interface
-- [ ] Document embedding pipeline
-- [ ] RAG implementation
-- [ ] Vector search
+**Goal:** Harden the platform for production-grade deployment.
 
-## Phase 6: Real-time Features
+| Deliverable                                         | Status |
+| --------------------------------------------------- | ------ |
+| Kubernetes manifests (infra/kubernetes/)            | ⬜     |
+| Production Docker images                            | ⬜     |
+| CI/CD pipeline hardening                            | ⬜     |
+| Monitoring and alerting (Prometheus / Grafana)      | ⬜     |
+| Production secrets management                       | ⬜     |
+| Admin panel (user management, workspace management) | ⬜     |
+| Audit logging UI                                    | ⬜     |
+| Rate limiting hardening                             | ⬜     |
+| Google Workspace integration                        | ⬜     |
+| VS Code extension deepening                         | ⬜     |
+| Multi-region / high-availability configuration      | ⬜     |
 
-- [ ] WebSocket integration
-- [ ] Live notifications
-- [ ] Collaborative features
-
-## Phase 7: Advanced Features
-
-- [ ] Analytics dashboard
-- [ ] Admin panel
-- [ ] VS Code extension
-- [ ] Knowledge graph
-
-## Phase 8: Production Readiness
-
-- [ ] Performance optimization
-- [ ] Security hardening
-- [ ] Monitoring & alerting
-- [ ] Load testing
-
-## Future Improvements
-
-<!-- Note planned enhancements or open questions. -->
+---
 
 ## References
 
-<!-- Link to related documents, standards, or external resources. -->
+- Canonical roadmap: [`ROADMAP.md`](../../ROADMAP.md)
+- Live progress: [`CURRENT_STATUS.md`](../../CURRENT_STATUS.md)
+- Backend module docs: [`docs/backend/README.md`](../backend/README.md)
