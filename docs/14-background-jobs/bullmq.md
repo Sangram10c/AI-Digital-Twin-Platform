@@ -1,59 +1,98 @@
-# BullMQ
+# Phase 14 — Background Job Architecture
 
-## Purpose
+> **Status: ✅ Implemented**
+>
+> BullMQ job queue infrastructure is implemented in `apps/backend/src/jobs/`. Redis ≥ 5.0 is required.
 
-Document how the backend uses BullMQ + Redis for asynchronous work.
+---
 
-## Scope
+## Architecture
 
-Current production use on this branch: **GitHub webhook processing queues**.  
-Planned/other: full repository crawl workers when `repository` module is restored.
-
-## Overview
-
-- Library: `bullmq` + `@nestjs/bullmq`
-- Config: `apps/backend/src/config/bullmq.config.ts` (`REDIS_URL`, `QUEUE_PREFIX`)
-- Redis must be **≥ 5.0**
-
-## Webhook queues (live)
-
-Registered in `src/modules/webhook/webhook.module.ts`:
-
-| Queue                     | Role                     |
-| ------------------------- | ------------------------ |
-| `webhook-processing`      | Route delivery           |
-| `webhook-commit-sync`     | Commits/branches         |
-| `webhook-pr-sync`         | Pull requests            |
-| `webhook-issue-sync`      | Issues                   |
-| `webhook-release-sync`    | Releases                 |
-| `webhook-repository-sync` | Repo metadata            |
-| `webhook-statistics`      | Stars/watchers           |
-| `webhook-dead-letter`     | Failed after max retries |
-
-Defaults: 5 attempts, exponential backoff, concurrency 5 on domain workers.
-
-## Local Redis
-
-See `apps/backend/COMMANDS.md` (often Redis 5 on port **6380** on Windows without Docker).
-
-```env
-REDIS_URL=redis://localhost:6380/0
-QUEUE_PREFIX=ai-twin
+```
+HTTP Handler / Scheduler / Webhook
+          │
+          ▼
+    BullMQ Queue (Redis ≥ 5.0)
+          │
+    ┌─────┴──────────┐
+    ▼                ▼
+ Worker           Worker
+ (Processor)      (Processor)
+    │                │
+    ▼                ▼
+  Service Layer    Service Layer
+    │
+    ▼
+PostgreSQL / Redis / AI Provider
 ```
 
-## Design
+---
 
-- Controllers enqueue only; workers do DB writes
-- Job ids keyed by GitHub delivery id for idempotency
-- Dead-letter queue for poison messages
+## Queue Definitions
 
-## Future Improvements
+Queue names are defined in `apps/backend/src/jobs/queues/index.ts`:
 
-- Shared BullMQ root module for repository + webhook
-- Metrics exporters (queue depth, failure rate)
+```typescript
+export const QUEUES = {
+  EMBEDDING: 'embedding',
+  NOTIFICATION: 'notification',
+  EMAIL: 'email',
+  AI_PROCESSING: 'ai-processing',
+  ANALYTICS: 'analytics',
+} as const;
+```
 
-## References
+## Queues
 
-- [Webhook processing](../backend/webhook-processing.md)
-- [Background jobs index](./README.md)
-- https://docs.bullmq.io/
+| Queue Name      | Constant               | Purpose                                            |
+| --------------- | ---------------------- | -------------------------------------------------- |
+| `embedding`     | `QUEUES.EMBEDDING`     | Generate pgvector embeddings for knowledge chunks  |
+| `notification`  | `QUEUES.NOTIFICATION`  | Deliver in-app / push notifications to users       |
+| `email`         | `QUEUES.EMAIL`         | Send transactional email messages                  |
+| `ai-processing` | `QUEUES.AI_PROCESSING` | AI extraction: digest generation, heuristics       |
+| `analytics`     | `QUEUES.ANALYTICS`     | Aggregate analytics snapshots per workspace/period |
+
+> **Note:** Webhook processing and repository synchronization are handled directly by the `webhook` and `repository` modules using BullMQ internally rather than the shared `QUEUES` constant.
+
+---
+
+## Redis Requirement
+
+BullMQ **requires Redis ≥ 5.0**. The platform uses Redis at `REDIS_URL` (see `apps/backend/.env`).
+
+> **Local development:** Redis 3.x (Windows default service) will fail with `Redis version needs to be greater or equal than 5.0.0`. Use a Redis 5+ installation.
+
+---
+
+## Workers / Processors
+
+Worker processors reside in `apps/backend/src/jobs/processors/`. The analytics aggregation processor is registered by `AnalyticsModule` and runs as:
+
+| Processor                         | Queue       | What it does                                                        |
+| --------------------------------- | ----------- | ------------------------------------------------------------------- |
+| `AnalyticsAggregationProcessor`   | `analytics` | Aggregates 8 metric domains, stores JSONB snapshot, caches in Redis |
+| `EmbeddingProcessor` (per module) | `embedding` | Fetches pending chunks, calls AI provider, stores pgvector vector   |
+| Webhook ingest worker             | internal    | Parses and dispatches GitHub webhook events                         |
+| Repository sync worker            | internal    | Syncs branches, commits, PRs, issues, releases                      |
+
+---
+
+## BullMQ Patterns Used
+
+| Pattern             | Usage                                                               |
+| ------------------- | ------------------------------------------------------------------- |
+| Retry with backoff  | Embedding, AI-processing queues retry on provider errors            |
+| Concurrency control | Analytics worker processes one workspace at a time per slot         |
+| Job deduplication   | Analytics jobs check for duplicate period before enqueuing          |
+| Fire-and-forget     | `ModelUsage` + `PromptHistory` persistence from chat orchestrator   |
+| Idempotency         | Embedding generation uses content checksum to skip unchanged chunks |
+
+---
+
+## Related Documents
+
+- [BullMQ Queues Detail](./queues.md)
+- [Workers](./workers.md)
+- [Retries](./retries.md)
+- [Analytics & Insights](../backend/analytics.md)
+- [Embedding Pipeline](../backend/embedding-pipeline.md)
