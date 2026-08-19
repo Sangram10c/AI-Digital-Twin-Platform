@@ -1,2 +1,2 @@
-// Analytics DTOs
-// Export DTOs here as they are created
+export * from './analytics-filter.dto';
+export * from './analytics-response.dto';

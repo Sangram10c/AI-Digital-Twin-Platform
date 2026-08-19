@@ -30,6 +30,7 @@ import { RepositoryModule } from './modules/repository/repository.module';
 import { EmbeddingsModule } from './modules/embeddings/embeddings.module';
 import { SearchModule } from './modules/search/search.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -98,6 +99,7 @@ import { ChatModule } from './modules/chat/chat.module';
     EmbeddingsModule,
     SearchModule,
     ChatModule,
+    AnalyticsModule,
 
     // Feature modules — uncomment as implemented
     // WorkspacesModule,

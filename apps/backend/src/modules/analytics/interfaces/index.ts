@@ -1,2 +1,1 @@
-// Analytics Interfaces
-// Export interfaces here as they are created
+export * from './analytics-metrics.interface';

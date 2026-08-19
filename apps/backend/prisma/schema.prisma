@@ -21,7 +21,7 @@ generator client {
 datasource db {
   provider   = "postgresql"
   // Connection URL is managed in prisma.config.ts → datasource.url = env("DATABASE_URL")
-  extensions = [vector]
+  extensions = [vector, pg_trgm]
 }
 
 // =============================================================================
@@ -622,15 +622,16 @@ model Repository {
   conversations    Conversation[]
   searchHistories  SearchHistory[]
 
-  heuristicMetadata   HeuristicMetadata?
-  repositoryDigests   RepositoryDigest[]
-  moduleDigests       ModuleDigest[]
-  pullRequestDigests  PullRequestDigest[]
+  heuristicMetadata    HeuristicMetadata?
+  repositoryDigests    RepositoryDigest[]
+  moduleDigests        ModuleDigest[]
+  pullRequestDigests   PullRequestDigest[]
   documentationDigests DocumentationDigest[]
-  releaseDigests      ReleaseDigest[]
-  digestChecksums     DigestChecksum[]
-  aiAnalyses          AIAnalysis[]
-  aiExecutionLogs     AIExecutionLog[]
+  releaseDigests       ReleaseDigest[]
+  digestChecksums      DigestChecksum[]
+  aiAnalyses           AIAnalysis[]
+  aiExecutionLogs      AIExecutionLog[]
+  analyticsSnapshots   AnalyticsSnapshot[]
 
   @@unique([connectedAccountId, providerRepositoryId], map: "uq_repositories_account_provider_repo")
   @@index([workspaceId], map: "idx_repositories_workspace_id")
@@ -944,6 +945,7 @@ model KnowledgeSource {
   @@unique([workspaceId, sourceType, externalRefId], map: "uq_knowledge_sources_workspace_type_ref")
   @@index([repositoryId], map: "idx_knowledge_sources_repository_id")
   @@index([sourceType], map: "idx_knowledge_sources_source_type")
+  @@index([path(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_knowledge_sources_path_trgm")
   @@map("knowledge_sources")
 }
 
@@ -1013,6 +1015,9 @@ model KnowledgeChunk {
   @@index([contentHash], map: "idx_knowledge_chunks_content_hash")
   @@index([deletedAt], map: "idx_knowledge_chunks_deleted_at")
   @@index([workspaceId, repositoryId, deletedAt], map: "idx_knowledge_chunks_ws_repo_deleted")
+  @@index([searchVector], type: Gin, map: "idx_knowledge_chunks_search_vector_gin")
+  @@index([content(ops: raw("gin_trgm_ops"))], type: Gin, map: "idx_knowledge_chunks_content_trgm")
+  @@index([metadata(ops: raw("jsonb_path_ops"))], type: Gin, map: "idx_knowledge_chunks_metadata_gin")
   @@map("knowledge_chunks")
 }
 
@@ -1027,10 +1032,10 @@ model Embedding {
   /// Provider id: gemini | openai | voyage | nomic | local | mock
   provider String @db.VarChar(64)
 
-  model    String @db.VarChar(128)
+  model      String @db.VarChar(128)
   /// Monotonic embedding schema/version for provider/model migrations.
-  version  Int    @default(1) @map("embedding_version")
-  dimensions Int  @default(1536)
+  version    Int    @default(1) @map("embedding_version")
+  dimensions Int    @default(1536)
 
   status EmbeddingStatus @default(PENDING)
 
@@ -1393,6 +1398,12 @@ enum AnalyticsSnapshotType {
   SEARCH
   WORKSPACE
   PLATFORM
+  /// Phase 13 additions
+  KNOWLEDGE
+  CONVERSATION
+  JOB
+  RAG
+  EMBEDDING
 }
 
 /// Type of background job processed by BullMQ workers.
@@ -1494,7 +1505,9 @@ model AuditLog {
 model AnalyticsSnapshot {
   id String @id @default(uuid()) @db.Uuid
 
-  workspaceId String? @map("workspace_id") @db.Uuid
+  workspaceId  String? @map("workspace_id") @db.Uuid
+  /// Phase 13 (Q1): nullable repository-level dimension for per-repository snapshots.
+  repositoryId String? @map("repository_id") @db.Uuid
 
   snapshotType AnalyticsSnapshotType @map("snapshot_type")
   periodStart  DateTime              @map("period_start")
@@ -1505,11 +1518,14 @@ model AnalyticsSnapshot {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace  Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository? @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId], map: "idx_analytics_snapshots_workspace_id")
+  @@index([repositoryId], map: "idx_analytics_snapshots_repository_id")
   @@index([snapshotType], map: "idx_analytics_snapshots_snapshot_type")
   @@index([periodStart, periodEnd], map: "idx_analytics_snapshots_period")
+  @@index([workspaceId, snapshotType, periodStart], map: "idx_analytics_snapshots_ws_type_period")
   @@map("analytics_snapshots")
 }
 
@@ -1590,18 +1606,18 @@ model HeuristicMetadata {
   topics         String[] @default([])
   technologies   String[] @default([])
 
-  featureCount   Int @default(0) @map("feature_count")
-  bugFixCount    Int @default(0) @map("bug_fix_count")
-  refactorCount  Int @default(0) @map("refactor_count")
-  securityCount  Int @default(0) @map("security_count")
+  featureCount     Int @default(0) @map("feature_count")
+  bugFixCount      Int @default(0) @map("bug_fix_count")
+  refactorCount    Int @default(0) @map("refactor_count")
+  securityCount    Int @default(0) @map("security_count")
   performanceCount Int @default(0) @map("performance_count")
 
   riskScore       Float @default(0) @map("risk_score")
   confidenceScore Float @default(0) @map("confidence_score")
 
-  folderStructure Json? @map("folder_structure") @db.JsonB
-  relationships   Json? @db.JsonB
-  rawSignals      Json? @map("raw_signals") @db.JsonB
+  folderStructure Json?   @map("folder_structure") @db.JsonB
+  relationships   Json?   @db.JsonB
+  rawSignals      Json?   @map("raw_signals") @db.JsonB
   contentChecksum String? @map("content_checksum") @db.VarChar(64)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -1620,18 +1636,18 @@ model RepositoryDigest {
   workspaceId  String @map("workspace_id") @db.Uuid
   repositoryId String @map("repository_id") @db.Uuid
 
-  title           String  @db.VarChar(512)
-  summaryText     String  @map("summary_text") @db.Text
-  contentChecksum String  @map("content_checksum") @db.VarChar(64)
-  version         Int     @default(1)
-  entityCount     Int     @default(0) @map("entity_count")
-  metadata        Json?   @db.JsonB
+  title           String @db.VarChar(512)
+  summaryText     String @map("summary_text") @db.Text
+  contentChecksum String @map("content_checksum") @db.VarChar(64)
+  version         Int    @default(1)
+  entityCount     Int    @default(0) @map("entity_count")
+  metadata        Json?  @db.JsonB
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   analyses   AIAnalysis[]
 
   @@unique([repositoryId, contentChecksum], map: "uq_repository_digests_repo_checksum")
@@ -1657,8 +1673,8 @@ model ModuleDigest {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   analyses   AIAnalysis[]
 
   @@unique([repositoryId, moduleKey], map: "uq_module_digests_repo_module")
@@ -1683,8 +1699,8 @@ model PullRequestDigest {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   analyses   AIAnalysis[]
 
   @@unique([repositoryId, batchKey], map: "uq_pr_digests_repo_batch")
@@ -1709,8 +1725,8 @@ model DocumentationDigest {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   analyses   AIAnalysis[]
 
   @@unique([repositoryId, docKey], map: "uq_documentation_digests_repo_key")
@@ -1735,8 +1751,8 @@ model ReleaseDigest {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace  Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  workspace  Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository Repository   @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
   analyses   AIAnalysis[]
 
   @@unique([repositoryId, releaseKey], map: "uq_release_digests_repo_key")
@@ -1768,11 +1784,11 @@ model DigestChecksum {
 model AIAnalysis {
   id String @id @default(uuid()) @db.Uuid
 
-  workspaceId  String            @map("workspace_id") @db.Uuid
-  repositoryId String            @map("repository_id") @db.Uuid
-  digestKind   DigestKind        @map("digest_kind")
-  mode         AIExtractionMode  @default(LIGHT)
-  status       AIAnalysisStatus  @default(PENDING)
+  workspaceId  String           @map("workspace_id") @db.Uuid
+  repositoryId String           @map("repository_id") @db.Uuid
+  digestKind   DigestKind       @map("digest_kind")
+  mode         AIExtractionMode @default(LIGHT)
+  status       AIAnalysisStatus @default(PENDING)
 
   repositoryDigestId    String? @map("repository_digest_id") @db.Uuid
   moduleDigestId        String? @map("module_digest_id") @db.Uuid
@@ -1780,26 +1796,26 @@ model AIAnalysis {
   documentationDigestId String? @map("documentation_digest_id") @db.Uuid
   releaseDigestId       String? @map("release_digest_id") @db.Uuid
 
-  provider      String? @db.VarChar(64)
-  model         String? @db.VarChar(128)
+  provider        String? @db.VarChar(64)
+  model           String? @db.VarChar(128)
   contentChecksum String? @map("content_checksum") @db.VarChar(64)
-  result        Json?   @db.JsonB
-  rawText       String? @map("raw_text") @db.Text
-  latencyMs     Int?    @map("latency_ms")
-  errorMessage  String? @map("error_message") @db.Text
+  result          Json?   @db.JsonB
+  rawText         String? @map("raw_text") @db.Text
+  latencyMs       Int?    @map("latency_ms")
+  errorMessage    String? @map("error_message") @db.Text
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workspace             Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  repository            Repository            @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
-  repositoryDigest      RepositoryDigest?     @relation(fields: [repositoryDigestId], references: [id], onDelete: SetNull)
-  moduleDigest          ModuleDigest?         @relation(fields: [moduleDigestId], references: [id], onDelete: SetNull)
-  pullRequestDigest     PullRequestDigest?    @relation(fields: [pullRequestDigestId], references: [id], onDelete: SetNull)
-  documentationDigest   DocumentationDigest?  @relation(fields: [documentationDigestId], references: [id], onDelete: SetNull)
-  releaseDigest         ReleaseDigest?        @relation(fields: [releaseDigestId], references: [id], onDelete: SetNull)
-  providerExecutions    ProviderExecution[]
-  providerFailures      ProviderFailure[]
+  workspace           Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  repository          Repository           @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  repositoryDigest    RepositoryDigest?    @relation(fields: [repositoryDigestId], references: [id], onDelete: SetNull)
+  moduleDigest        ModuleDigest?        @relation(fields: [moduleDigestId], references: [id], onDelete: SetNull)
+  pullRequestDigest   PullRequestDigest?   @relation(fields: [pullRequestDigestId], references: [id], onDelete: SetNull)
+  documentationDigest DocumentationDigest? @relation(fields: [documentationDigestId], references: [id], onDelete: SetNull)
+  releaseDigest       ReleaseDigest?       @relation(fields: [releaseDigestId], references: [id], onDelete: SetNull)
+  providerExecutions  ProviderExecution[]
+  providerFailures    ProviderFailure[]
 
   @@index([workspaceId], map: "idx_ai_analyses_workspace_id")
   @@index([repositoryId], map: "idx_ai_analyses_repository_id")
@@ -1814,13 +1830,13 @@ model ProviderExecution {
   workspaceId  String  @map("workspace_id") @db.Uuid
   aiAnalysisId String? @map("ai_analysis_id") @db.Uuid
 
-  provider   String  @db.VarChar(64)
-  model      String? @db.VarChar(128)
-  success    Boolean @default(false)
-  latencyMs  Int?    @map("latency_ms")
-  tokenUsage Int?    @map("token_usage")
-  requestMeta Json?  @map("request_meta") @db.JsonB
-  responseMeta Json? @map("response_meta") @db.JsonB
+  provider     String  @db.VarChar(64)
+  model        String? @db.VarChar(128)
+  success      Boolean @default(false)
+  latencyMs    Int?    @map("latency_ms")
+  tokenUsage   Int?    @map("token_usage")
+  requestMeta  Json?   @map("request_meta") @db.JsonB
+  responseMeta Json?   @map("response_meta") @db.JsonB
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -1839,9 +1855,9 @@ model ProviderFailure {
   workspaceId  String  @map("workspace_id") @db.Uuid
   aiAnalysisId String? @map("ai_analysis_id") @db.Uuid
 
-  provider     String @db.VarChar(64)
+  provider     String  @db.VarChar(64)
   errorCode    String? @map("error_code") @db.VarChar(64)
-  errorMessage String @map("error_message") @db.Text
+  errorMessage String  @map("error_message") @db.Text
   retriable    Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at")

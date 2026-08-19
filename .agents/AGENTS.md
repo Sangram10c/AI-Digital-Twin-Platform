@@ -673,3 +673,28 @@ APIs changed
 Tests run 10. Test results 11. Remaining issues 12. Risks 13. Follow-up work
 
 Be honest about incomplete work.
+
+## Decision and Approval Protocol
+
+Do not make important architectural decisions silently.
+
+Before implementation, STOP and ask the user when a decision affects:
+
+- Database schema
+- API contracts
+- Security architecture
+- Workspace/repository isolation
+- RAG architecture
+- AI provider architecture
+- Backward compatibility
+- Major infrastructure
+
+When asking:
+
+1. State the problem.
+2. Show the options.
+3. Recommend one.
+4. Explain the trade-off briefly.
+5. Wait for user confirmation.
+
+Do not treat a recommendation as approval.

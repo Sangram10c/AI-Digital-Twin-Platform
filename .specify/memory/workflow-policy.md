@@ -500,3 +500,31 @@ security
 scalability
 traceability
 development speed
+
+## Decision Gate Rule
+
+The agent MUST stop and ask the user before implementation when a decision:
+
+- Changes the database schema
+- Changes an existing API contract
+- Changes security or authorization boundaries
+- Changes workspace/repository isolation
+- Changes RAG or AI architecture
+- Introduces a new external provider
+- Requires choosing between materially different architectural options
+- Has multiple valid implementation approaches with meaningful long-term impact
+
+For these decisions:
+
+1. Explain the decision.
+2. Present the available options.
+3. Recommend one option.
+4. Ask the user to choose or confirm.
+5. Do not modify code until the decision is confirmed.
+
+The agent MAY proceed without asking when:
+
+- The answer is already established by the project constitution.
+- The answer follows an existing project convention.
+- The change is a low-risk implementation detail.
+- The choice has no meaningful architectural impact.
