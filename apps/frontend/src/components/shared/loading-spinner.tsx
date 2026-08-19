@@ -1,12 +1,25 @@
-/**
- * Loading Spinner Component (Placeholder)
- *
- * Reusable loading indicator.
- */
-export function LoadingSpinner({ className }: { className?: string }) {
+import { cn } from '@/utils/cn';
+
+export interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) {
+  const sizeStyles = {
+    sm: 'h-4 w-4 border-2',
+    md: 'h-8 w-8 border-3',
+    lg: 'h-12 w-12 border-4',
+  };
+
   return (
-    <div className={`flex items-center justify-center ${className ?? ''}`}>
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
+    <div className={cn('flex items-center justify-center', className)}>
+      <div
+        className={cn(
+          'animate-spin rounded-full border-muted-foreground/20 border-t-primary',
+          sizeStyles[size],
+        )}
+      />
     </div>
   );
 }

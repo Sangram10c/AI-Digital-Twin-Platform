@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: August 19, 2026 at 12:38 PM
+> Generated: August 19, 2026 at 05:35 PM
 
 ---
 
@@ -63,9 +63,9 @@
 
 ## 🔀 Git Status
 
-- **Branch:** ANALYTICS-INSIGHTS
-- **Last Commit:** feat(analytics): implement analytics module and migrations
-- **Commit Hash:** b07d917
+- **Branch:** Folder-str
+- **Last Commit:** Merge pull request #136 from Sangram10c/ANALYTICS-INSIGHTS
+- **Commit Hash:** a39a9ac
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -74,24 +74,24 @@
 - CURRENT_STATUS.md
 - CURRENT_STATUS.md.backup
 - PROJECT_REPORT.md
-- README.md
-- ROADMAP.md
-- apps/backend/COMMANDS.md
-- apps/backend/README.md
-- apps/backend/prisma/migrations/README.md
-- docs/07-database-erd/README.md
-- docs/09-api-design/README.md
-- docs/14-background-jobs/bullmq.md
-- docs/18-folder-structure/backend.md
-- docs/22-development-roadmap/phases.md
-- docs/backend/README.md
-- docs/backend/admin-module.md
-- docs/backend/ai-module.md
-- docs/backend/documents-module.md
-- docs/backend/google-module.md
-- docs/backend/integrations-module.md
-- docs/backend/knowledge-heuristics-module.md
-- _...and 6 more_
+- apps/frontend/src/app/(auth)/layout.tsx
+- apps/frontend/src/app/(auth)/login/page.tsx
+- apps/frontend/src/app/(auth)/register/page.tsx
+- apps/frontend/src/app/globals.css
+- apps/frontend/src/app/layout.tsx
+- apps/frontend/src/components/layout/index.ts
+- apps/frontend/src/components/providers/index.ts
+- apps/frontend/src/components/providers/theme-provider.tsx
+- apps/frontend/src/components/shared/index.ts
+- apps/frontend/src/components/shared/loading-spinner.tsx
+- apps/frontend/src/config/api.config.ts
+- apps/frontend/src/config/nav.config.ts
+- apps/frontend/src/constants/api-endpoints.ts
+- apps/frontend/src/constants/routes.ts
+- apps/frontend/src/services/api.service.ts
+- apps/frontend/src/store/ui.store.ts
+- apps/frontend/src/store/workspace.store.ts
+- _...and 95 more_
 
 ---
 

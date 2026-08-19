@@ -1,3 +1,5 @@
-export { Header } from './header';
-export { Sidebar } from './sidebar';
-export { Footer } from './footer';
+export * from './public-header';
+export * from './app-sidebar';
+export * from './app-header';
+export * from './workspace-switcher';
+export * from './user-nav';

@@ -1,26 +1,186 @@
 @import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Light Mode Palette */
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11.2%;
+
+    --ai: 262 83% 58%;
+    --ai-foreground: 210 40% 98%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 222 47% 11%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 1rem;
+
+    /* Analytics Chart Palette (Light) */
+    --chart-1: 221 83% 53%;
+    --chart-2: 262 83% 58%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+    --chart-6: 199 89% 48%;
+    --chart-7: 280 65% 60%;
+    --chart-8: 160 60% 45%;
+  }
+
+  .dark {
+    /* Dark Mode Palette - Clean Solid Plain Deep Dark */
+    --background: 224 71% 4%; /* #050811 deep solid plain dark */
+    --foreground: 210 40% 98%;
+
+    --card: 224 45% 7%; /* #0b101f dark slate surface */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 224 50% 6%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 13%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 11%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217 33% 14%;
+    --accent-foreground: 210 40% 98%;
+
+    --ai: 263 70% 66%;
+    --ai-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 224 71% 4%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 224 76% 48%;
+
+    /* Analytics Chart Palette (Dark) */
+    --chart-1: 217 91% 60%;
+    --chart-2: 263 70% 66%;
+    --chart-3: 142 71% 45%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 62.8% 50.6%;
+    --chart-6: 199 89% 48%;
+    --chart-7: 280 65% 60%;
+    --chart-8: 160 60% 45%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+/* Keyframe Animations for Subtle Ambient Glow */
+@keyframes aurora-glow {
+  0%,
+  100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(20px, -20px) scale(1.1);
+    opacity: 0.45;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background-color: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--border) / 0.7);
+  }
+
+  .glass-card {
+    background: linear-gradient(135deg, hsl(var(--card) / 0.95), hsl(var(--card) / 0.8));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  .card-plain-dark {
+    background-color: #0b101f;
+    border: 1px solid #1e293b;
+    border-radius: 1rem;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-plain-dark:hover {
+    border-color: #3b82f6;
+    background-color: #0d1427;
+    box-shadow: 0 8px 30px -6px rgba(37, 99, 235, 0.2);
+    transform: translateY(-2px);
+  }
+
+  .glow-ai {
+    box-shadow: 0 0 35px -5px hsl(var(--ai) / 0.35);
+  }
+
+  .ai-gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--ai)) 50%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Custom Scrollbar for dense developer views */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
 }
