@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ConnectedAccountStatus } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class GithubConnectQueryDto {
   @ApiPropertyOptional({
@@ -66,6 +66,14 @@ export class GithubCallbackQueryDto {
   })
   @IsOptional()
   error_description?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'OAuth 2.0 Authorization Server Issuer Identification (RFC 9207)',
+  })
+  @IsOptional()
+  @IsString()
+  iss?: string;
 }
 
 export class ConnectedAccountResponseDto {
@@ -179,4 +187,97 @@ export class GithubConnectResponseDto {
     example: 'https://github.com/login/oauth/authorize?client_id=...&state=...',
   })
   authorizationUrl!: string;
+}
+
+export class ImportGithubRepositoryDto {
+  @ApiProperty({ format: 'uuid' })
+  @IsUUID()
+  workspaceId!: string;
+
+  @ApiProperty({ example: '123456789' })
+  @IsString()
+  providerRepositoryId!: string;
+
+  @ApiProperty({ example: 'AI-Digital-Twin-Platform' })
+  @IsString()
+  name!: string;
+
+  @ApiProperty({ example: 'Sangram10c/AI-Digital-Twin-Platform' })
+  @IsString()
+  fullName!: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ default: 'main' })
+  @IsOptional()
+  @IsString()
+  defaultBranch?: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
+
+  @ApiPropertyOptional({ example: 'TypeScript' })
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  url?: string;
+}
+
+export class AvailableGithubRepositoryDto {
+  @ApiProperty({ example: '123456789' })
+  id!: string;
+
+  @ApiProperty({ example: 'AI-Digital-Twin-Platform' })
+  name!: string;
+
+  @ApiProperty({ example: 'Sangram10c/AI-Digital-Twin-Platform' })
+  fullName!: string;
+
+  @ApiProperty({ example: 'Sangram10c' })
+  owner!: string;
+
+  @ApiPropertyOptional()
+  avatarUrl?: string;
+
+  @ApiProperty({ example: false })
+  isPrivate!: boolean;
+
+  @ApiProperty({ example: false })
+  isFork!: boolean;
+
+  @ApiPropertyOptional()
+  description?: string | null;
+
+  @ApiProperty({ example: 'main' })
+  defaultBranch!: string;
+
+  @ApiPropertyOptional({ example: 'TypeScript' })
+  language?: string | null;
+
+  @ApiProperty({ example: 42 })
+  starsCount!: number;
+
+  @ApiPropertyOptional()
+  url?: string;
+
+  @ApiPropertyOptional()
+  htmlUrl?: string;
+
+  @ApiPropertyOptional()
+  updatedAt?: string;
+
+  @ApiProperty({ example: false })
+  isImported!: boolean;
+
+  @ApiPropertyOptional({ format: 'uuid' })
+  workspaceRepositoryId?: string;
 }

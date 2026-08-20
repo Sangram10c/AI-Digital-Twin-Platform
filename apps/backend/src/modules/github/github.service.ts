@@ -12,11 +12,13 @@ import {
   GitProviderType,
   OAuthToken,
   ProviderType,
+  RepositoryStatus,
   UserStatus,
   WorkspaceStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { GITHUB_AUDIT_ACTIONS } from './constants/github.constants';
+import { AvailableGithubRepositoryDto, ImportGithubRepositoryDto } from './dto';
 import { ConnectedAccountView } from './interfaces/connected-account-view.interface';
 import { GitHubProfile } from './interfaces/github-profile.interface';
 import { GitHubTokenResponse } from './interfaces/github-token-response.interface';
@@ -225,6 +227,169 @@ export class GithubService {
     return accounts.map((account) => this.toConnectedAccountView(account));
   }
 
+  async listAvailableGithubRepositories(
+    userId: string,
+    workspaceId: string,
+  ): Promise<AvailableGithubRepositoryDto[]> {
+    await this.assertWorkspaceMembership(userId, workspaceId);
+
+    const gitProvider = await this.getGithubProvider();
+    const connectedAccount = await this.prisma.connectedAccount.findFirst({
+      where: {
+        workspaceId,
+        gitProviderId: gitProvider.id,
+        status: ConnectedAccountStatus.ACTIVE,
+      },
+      orderBy: { connectedAt: 'desc' },
+    });
+
+    let oauthToken: OAuthToken | null = null;
+    if (connectedAccount?.oauthTokenId) {
+      oauthToken = await this.prisma.oAuthToken.findUnique({
+        where: { id: connectedAccount.oauthTokenId },
+      });
+    }
+
+    if (!oauthToken) {
+      oauthToken = await this.prisma.oAuthToken.findFirst({
+        where: {
+          userId,
+          provider: ProviderType.GITHUB,
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
+
+    if (!oauthToken) {
+      return [];
+    }
+
+    const accessToken = this.tokenEncryptionService.decrypt(
+      oauthToken.accessTokenEncrypted,
+    );
+
+    const remoteRepos =
+      await this.githubApiClient.listUserRepositories(accessToken);
+
+    const existingWorkspaceRepos = await this.prisma.repository.findMany({
+      where: {
+        workspaceId,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        providerRepositoryId: true,
+        fullName: true,
+      },
+    });
+
+    const existingMap = new Map<string, string>();
+    for (const r of existingWorkspaceRepos) {
+      existingMap.set(r.providerRepositoryId, r.id);
+      existingMap.set(r.fullName.toLowerCase(), r.id);
+    }
+
+    return remoteRepos.map((repo) => {
+      const stringId = String(repo.id);
+      const isImported =
+        existingMap.has(stringId) ||
+        existingMap.has(repo.full_name.toLowerCase());
+      const workspaceRepoId =
+        existingMap.get(stringId) ||
+        existingMap.get(repo.full_name.toLowerCase());
+
+      return {
+        id: stringId,
+        name: repo.name,
+        fullName: repo.full_name,
+        owner: repo.owner?.login || '',
+        avatarUrl: repo.owner?.avatar_url,
+        isPrivate: repo.private,
+        isFork: repo.fork,
+        description: repo.description,
+        defaultBranch: repo.default_branch || 'main',
+        language: repo.language,
+        starsCount: repo.stargazers_count || 0,
+        url: repo.url,
+        htmlUrl: repo.html_url,
+        updatedAt: repo.updated_at,
+        isImported: Boolean(isImported),
+        workspaceRepositoryId: workspaceRepoId,
+      };
+    });
+  }
+
+  async importGithubRepository(
+    userId: string,
+    workspaceId: string,
+    dto: ImportGithubRepositoryDto,
+  ) {
+    await this.assertWorkspaceMembership(userId, workspaceId, true);
+
+    const gitProvider = await this.getGithubProvider();
+    let connectedAccount = await this.prisma.connectedAccount.findFirst({
+      where: {
+        workspaceId,
+        gitProviderId: gitProvider.id,
+        status: ConnectedAccountStatus.ACTIVE,
+      },
+      orderBy: { connectedAt: 'desc' },
+    });
+
+    if (!connectedAccount) {
+      const oauthToken = await this.prisma.oAuthToken.findFirst({
+        where: { userId, provider: ProviderType.GITHUB },
+        orderBy: { updatedAt: 'desc' },
+      });
+      if (!oauthToken) {
+        throw new BadRequestException(
+          'No connected GitHub account found. Please authorize GitHub first.',
+        );
+      }
+      connectedAccount = await this.linkTokenToWorkspace(
+        userId,
+        workspaceId,
+        oauthToken.id,
+      );
+    }
+
+    const repository = await this.prisma.repository.upsert({
+      where: {
+        connectedAccountId_providerRepositoryId: {
+          connectedAccountId: connectedAccount.id,
+          providerRepositoryId: String(dto.providerRepositoryId),
+        },
+      },
+      create: {
+        workspaceId,
+        connectedAccountId: connectedAccount.id,
+        gitProviderId: gitProvider.id,
+        providerRepositoryId: String(dto.providerRepositoryId),
+        name: dto.name,
+        fullName: dto.fullName,
+        description: dto.description ?? null,
+        url: dto.url ?? `https://github.com/${dto.fullName}`,
+        defaultBranch: dto.defaultBranch || 'main',
+        isPrivate: dto.isPrivate ?? false,
+        language: dto.language ?? null,
+        status: RepositoryStatus.ACTIVE,
+      },
+      update: {
+        name: dto.name,
+        fullName: dto.fullName,
+        description: dto.description ?? null,
+        url: dto.url ?? `https://github.com/${dto.fullName}`,
+        defaultBranch: dto.defaultBranch || 'main',
+        isPrivate: dto.isPrivate ?? false,
+        language: dto.language ?? null,
+        status: RepositoryStatus.ACTIVE,
+        deletedAt: null,
+      },
+    });
+
+    return repository;
+  }
+
   async linkTokenToWorkspace(
     userId: string,
     workspaceId: string,
@@ -264,15 +429,6 @@ export class GithubService {
       },
     });
 
-    if (
-      existingAccount &&
-      existingAccount.status === ConnectedAccountStatus.ACTIVE
-    ) {
-      throw new ConflictException(
-        'This GitHub account is already linked to the workspace',
-      );
-    }
-
     if (existingAccount) {
       return this.prisma.connectedAccount.update({
         where: { id: existingAccount.id },
@@ -285,6 +441,7 @@ export class GithubService {
           status: ConnectedAccountStatus.ACTIVE,
           disconnectedAt: null,
           lastSyncedAt: new Date(),
+          updatedAt: new Date(),
         },
       });
     }

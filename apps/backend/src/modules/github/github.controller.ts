@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -6,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseUUIDPipe,
+  Post,
   Query,
   Req,
   Res,
@@ -28,6 +30,7 @@ import type { AuthenticatedDeveloper } from '../identity/entities/authenticated-
 import { WorkspacePermission } from '../workspaces/constants/workspace-permissions.constants';
 import { RequireWorkspacePermission } from '../workspaces/decorators/require-workspace-permission.decorator';
 import {
+  AvailableGithubRepositoryDto,
   ConnectedAccountResponseDto,
   GithubCallbackQueryDto,
   GithubConnectQueryDto,
@@ -35,6 +38,7 @@ import {
   GithubMessageResponseDto,
   GithubWorkspaceDisconnectQueryDto,
   GithubWorkspaceQueryDto,
+  ImportGithubRepositoryDto,
   UserGithubAccountResponseDto,
 } from './dto';
 import { GithubWorkspaceGuard } from './guards/github-workspace.guard';
@@ -148,6 +152,40 @@ export class GithubController {
     @Query() query: GithubWorkspaceQueryDto,
   ) {
     return this.githubService.listWorkspaceAccounts(user.id, query.workspaceId);
+  }
+
+  @Get('repositories')
+  @ApiBearerAuth('JWT')
+  @RequireGithubWorkspace(WorkspacePermission.READ_WORKSPACE)
+  @ApiOperation({
+    summary: 'List available GitHub repositories from connected account',
+  })
+  @ApiQuery({ name: 'workspaceId', required: true, type: String })
+  @ApiResponse({ status: 200, type: [AvailableGithubRepositoryDto] })
+  listRepositories(
+    @CurrentDeveloper() user: AuthenticatedDeveloper,
+    @Query() query: GithubWorkspaceQueryDto,
+  ) {
+    return this.githubService.listAvailableGithubRepositories(
+      user.id,
+      query.workspaceId,
+    );
+  }
+
+  @Post('repositories/import')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth('JWT')
+  @RequireGithubWorkspace(WorkspacePermission.CREATE_REPOSITORIES)
+  @ApiOperation({ summary: 'Import and link a GitHub repository to workspace' })
+  importRepository(
+    @CurrentDeveloper() user: AuthenticatedDeveloper,
+    @Body() dto: ImportGithubRepositoryDto,
+  ) {
+    return this.githubService.importGithubRepository(
+      user.id,
+      dto.workspaceId,
+      dto,
+    );
   }
 
   @Delete('disconnect')

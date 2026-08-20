@@ -2,7 +2,10 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,39 +17,90 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth.store';
+import { useWorkspaceStore } from '@/store/workspace.store';
 import { authService } from '@/services/auth.service';
+import { workspaceService } from '@/services/workspace.service';
+import { LoadingSpinner } from '@/components/shared/loading-spinner';
+import type { AuthResponse } from '@/types/auth.types';
 
-export default function LoginPage() {
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
+function LoginFormContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || searchParams.get('from');
+
   const { login } = useAuthStore();
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const { setWorkspaces, resolveActiveWorkspace } = useWorkspaceStore();
+
   const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError('Please enter your email and password.');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
+  const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    setError(null);
+    setServerError(null);
 
     try {
-      const response = await authService.login({ email, password });
-      if (response && response.user && response.accessToken) {
-        login(response.user, response.accessToken);
-        router.push('/workspaces');
+      const response = await authService.login(data);
+      // Support both direct AuthResponse and nested { data: AuthResponse }
+      const payload: AuthResponse =
+        response && typeof response === 'object' && 'data' in response
+          ? (response as { data: AuthResponse }).data
+          : response;
+
+      if (payload && payload.user && payload.tokens) {
+        login(payload.user, payload.tokens);
+
+        // Fetch workspaces to route intelligently
+        try {
+          const workspaces = await workspaceService.getWorkspaces();
+          setWorkspaces(workspaces);
+          const active = resolveActiveWorkspace();
+
+          if (redirectTarget && redirectTarget.startsWith('/')) {
+            router.push(redirectTarget);
+          } else if (active) {
+            router.push(`/${active.slug}/dashboard`);
+          } else {
+            router.push('/workspaces');
+          }
+        } catch {
+          router.push(redirectTarget || '/workspaces');
+        }
       } else {
-        setError('Invalid response received from server.');
+        setServerError('Invalid response format received from server.');
       }
     } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { message?: string | string[] } } };
-      const msg =
-        apiErr.response?.data?.message || 'Authentication failed. Please verify credentials.';
-      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+      const apiErr = err as {
+        response?: { status?: number; data?: { message?: string | string[] } };
+      };
+      if (apiErr.response?.status === 401) {
+        setServerError('Email or password is incorrect. Please verify your credentials.');
+      } else if (apiErr.response?.status === 429) {
+        setServerError('Too many attempts. Please wait a moment and try again.');
+      } else {
+        const msg =
+          apiErr.response?.data?.message ||
+          'Unable to sign in. Please check your connection and try again.';
+        setServerError(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -54,51 +108,65 @@ export default function LoginPage() {
 
   const handleOAuth = (provider: 'github' | 'google') => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
-    window.location.href = `${baseUrl}/auth/${provider}`;
+    if (provider === 'github') {
+      window.location.href = `${baseUrl}/github/connect`;
+    } else {
+      setServerError('Google OAuth is not yet configured on this deployment.');
+    }
   };
 
   return (
-    <Card className="glass-panel border border-border shadow-xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-xl">Sign in to your account</CardTitle>
-        <CardDescription>
-          Enter your credentials or use OAuth to access your AI Digital Twin.
+    <Card className="border border-slate-800/80 bg-[#0b101f] shadow-2xl rounded-2xl">
+      <CardHeader className="space-y-1.5 p-6">
+        <CardTitle className="text-xl font-bold text-white">Sign in to your account</CardTitle>
+        <CardDescription className="text-xs text-slate-400">
+          Enter your email and password to access your project workspace.
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              {error}
-            </div>
-          )}
+      <CardContent className="p-6 pt-0 space-y-4">
+        {serverError && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-300">
+            {serverError}
+          </div>
+        )}
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Email</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Email Address</label>
             <Input
               type="email"
               placeholder="developer@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              autoComplete="email"
+              {...register('email')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
             />
+            {errors.email && <p className="text-[11px] text-rose-400">{errors.email.message}</p>}
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-foreground">Password</label>
+              <label className="text-xs font-semibold text-slate-300">Password</label>
+              <Link
+                href="/forgot-password"
+                className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Forgot password?
+              </Link>
             </div>
             <Input
               type="password"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              autoComplete="current-password"
+              {...register('password')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
             />
+            {errors.password && (
+              <p className="text-[11px] text-rose-400">{errors.password.message}</p>
+            )}
           </div>
 
-          <Button type="submit" variant="default" className="w-full" isLoading={isLoading}>
+          <Button type="submit" variant="ai" className="w-full" isLoading={isLoading}>
             Sign In
           </Button>
         </form>
@@ -106,10 +174,10 @@ export default function LoginPage() {
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
+            <div className="w-full border-t border-slate-800" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground font-mono text-[10px]">
+            <span className="bg-[#0b101f] px-2 text-slate-500 font-mono text-[10px]">
               Or continue with
             </span>
           </div>
@@ -160,12 +228,27 @@ export default function LoginPage() {
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-center border-t border-border pt-4 text-xs text-muted-foreground">
+      <CardFooter className="flex justify-center border-t border-slate-800 p-6 pt-4 text-xs text-slate-400">
         <span>Don&apos;t have an account? </span>
-        <Link href="/register" className="ml-1 font-semibold text-primary hover:underline">
+        <Link href="/register" className="ml-1 font-semibold text-blue-400 hover:text-blue-300">
           Sign up
         </Link>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <Card className="border border-slate-800/80 bg-[#0b101f] shadow-2xl rounded-2xl text-center p-8 space-y-4">
+          <LoadingSpinner size="lg" />
+          <span className="text-xs text-slate-400 font-mono">Loading sign in...</span>
+        </Card>
+      }
+    >
+      <LoginFormContent />
+    </React.Suspense>
   );
 }

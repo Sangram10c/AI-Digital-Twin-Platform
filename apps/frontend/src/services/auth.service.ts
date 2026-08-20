@@ -1,10 +1,16 @@
 /**
  * Auth Service
- *
- * Handles authentication API calls.
+ * Connects to NestJS Identity module at /api/v1/auth/*
  */
 import { api } from './api.service';
-import type { LoginCredentials, RegisterCredentials, AuthResponse } from '@/types/auth.types';
+import type {
+  LoginCredentials,
+  RegisterCredentials,
+  ForgotPasswordCredentials,
+  ResetPasswordCredentials,
+  AuthResponse,
+  AuthTokens,
+} from '@/types/auth.types';
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
@@ -17,17 +23,30 @@ export const authService = {
     return data;
   },
 
-  async logout(): Promise<void> {
-    await api.post('/auth/logout');
-  },
-
-  async refreshToken(): Promise<AuthResponse> {
-    const { data } = await api.post<AuthResponse>('/auth/refresh');
+  async logout(refreshToken?: string): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>('/auth/logout', {
+      refreshToken: refreshToken || '',
+    });
     return data;
   },
 
-  async getProfile(): Promise<AuthResponse['user']> {
-    const { data } = await api.get('/auth/profile');
+  async refreshToken(refreshToken: string): Promise<AuthTokens> {
+    const { data } = await api.post<AuthTokens>('/auth/refresh', { refreshToken });
+    return data;
+  },
+
+  async forgotPassword(credentials: ForgotPasswordCredentials): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>('/auth/forgot-password', credentials);
+    return data;
+  },
+
+  async resetPassword(credentials: ResetPasswordCredentials): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>('/auth/reset-password', credentials);
+    return data;
+  },
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    const { data } = await api.post<{ message: string }>('/auth/verify-email', { token });
     return data;
   },
 };

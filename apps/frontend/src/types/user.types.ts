@@ -11,10 +11,14 @@ export enum UserRole {
 
 export interface User {
   id: string;
-  name: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  displayName?: string | null;
+  role: UserRole;
+  status?: string;
+  emailVerifiedAt?: string | null;
   avatar?: string;
-  role?: UserRole;
   createdAt?: string;
   updatedAt?: string;
 }

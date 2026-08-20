@@ -28,7 +28,7 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 
   return (
     <DropdownContext.Provider value={{ open, setOpen }}>
-      <div ref={containerRef} className="relative inline-block text-left">
+      <div ref={containerRef} className="relative inline-block text-left w-full">
         {children}
       </div>
     </DropdownContext.Provider>
@@ -48,7 +48,7 @@ export function DropdownMenuTrigger({
   return (
     <div
       onClick={() => context.setOpen((prev) => !prev)}
-      className={cn('cursor-pointer inline-flex items-center', className)}
+      className={cn('cursor-pointer inline-flex items-center w-full', className)}
     >
       {children}
     </div>
@@ -56,7 +56,7 @@ export function DropdownMenuTrigger({
 }
 
 export function DropdownMenuContent({
-  align = 'right',
+  align = 'left',
   className,
   children,
 }: {
@@ -76,7 +76,7 @@ export function DropdownMenuContent({
   return (
     <div
       className={cn(
-        'absolute z-50 mt-2 min-w-[12rem] overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-xl animate-in fade-in-0 zoom-in-95 duration-100',
+        'absolute z-50 mt-2 min-w-[14rem] overflow-hidden rounded-xl border border-slate-800/90 bg-[#0b101f] p-1.5 text-slate-200 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 animate-in fade-in-0 zoom-in-95 duration-100',
         alignStyles[align],
         className,
       )}
@@ -110,7 +110,7 @@ export function DropdownMenuItem({
       role="menuitem"
       onClick={handleClick}
       className={cn(
-        'relative flex cursor-pointer select-none items-center rounded-sm px-2.5 py-1.5 text-xs font-medium outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+        'relative flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-xs font-medium text-slate-200 outline-none transition-colors hover:bg-slate-800/80 hover:text-white data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
         disabled && 'opacity-50 pointer-events-none',
         className,
       )}
@@ -121,7 +121,7 @@ export function DropdownMenuItem({
 }
 
 export function DropdownMenuSeparator({ className }: { className?: string }) {
-  return <div className={cn('-mx-1 my-1 h-px bg-border', className)} />;
+  return <div className={cn('-mx-1 my-1.5 h-px bg-slate-800/80', className)} />;
 }
 
 export function DropdownMenuLabel({
@@ -132,7 +132,12 @@ export function DropdownMenuLabel({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground', className)}>
+    <div
+      className={cn(
+        'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono',
+        className,
+      )}
+    >
       {children}
     </div>
   );

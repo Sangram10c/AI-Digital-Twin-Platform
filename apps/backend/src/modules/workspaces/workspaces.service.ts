@@ -603,4 +603,46 @@ export class WorkspacesService {
       updatedAt: workspace.updatedAt,
     };
   }
+
+  async listRepositories(workspaceId: string, userId: string) {
+    await this.getActiveWorkspace(workspaceId);
+    await this.assertMembership(workspaceId, userId);
+
+    const repos = await this.prisma.repository.findMany({
+      where: {
+        workspaceId,
+        deletedAt: null,
+      },
+      include: {
+        _count: {
+          select: {
+            commits: true,
+            pullRequests: true,
+            issues: true,
+            branches: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    return repos.map((repo) => ({
+      id: repo.id,
+      name: repo.name,
+      fullName: repo.fullName,
+      description: repo.description,
+      defaultBranch: repo.defaultBranch,
+      isPrivate: repo.isPrivate,
+      isFork: repo.isFork,
+      language: repo.language,
+      status: repo.status,
+      lastSyncedAt: repo.lastSyncedAt,
+      commitsCount: repo._count?.commits ?? 0,
+      pullRequestsCount: repo._count?.pullRequests ?? 0,
+      issuesCount: repo._count?.issues ?? 0,
+      branchesCount: repo._count?.branches ?? 0,
+      createdAt: repo.createdAt,
+      updatedAt: repo.updatedAt,
+    }));
+  }
 }

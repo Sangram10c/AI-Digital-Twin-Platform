@@ -74,6 +74,17 @@ export class WorkspacesController {
     return this.workspacesService.findOne(id, user.id);
   }
 
+  @Get(':id/repositories')
+  @UseGuards(WorkspaceMemberGuard)
+  @RequireWorkspacePermission(WorkspacePermission.READ_WORKSPACE)
+  @ApiOperation({ summary: 'List workspace repositories' })
+  listRepositories(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentDeveloper() user: AuthenticatedDeveloper,
+  ) {
+    return this.workspacesService.listRepositories(id, user.id);
+  }
+
   @Patch(':id')
   @UseGuards(WorkspaceMemberGuard)
   @RequireWorkspacePermission(WorkspacePermission.UPDATE_WORKSPACE)
