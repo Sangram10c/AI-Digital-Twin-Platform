@@ -11,7 +11,9 @@ test.describe('Phase 01 Foundation & Design System Smoke Tests', () => {
 
   test('features page loads successfully', async ({ page }) => {
     await page.goto('/features');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/Deep Engineering Intelligence/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      /Deep Engineering Intelligence/i,
+    );
     await expect(page.getByText(/Hybrid Search Engine/i)).toBeVisible();
     await expect(page.getByText(/10-Step AI \/ RAG Chat Engine/i)).toBeVisible();
   });
