@@ -1,94 +1,77 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
+import { adminService } from '@/services/admin.service';
+import { analyticsService } from '@/services/analytics.service';
+import { useWorkspaceStore } from '@/store/workspace.store';
 import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table';
+  AdminSystemHealth,
+  AdminQueuesTable,
+  AdminProvidersGrid,
+  AdminWorkspacesTable,
+  AdminSkeleton,
+} from '@/features/admin';
 
 export default function AdminOverviewPage() {
-  const queues = [
-    { name: 'embedding', waiting: 0, active: 0, completed: 1842, failed: 0, status: 'HEALTHY' },
-    { name: 'ai-processing', waiting: 0, active: 0, completed: 312, failed: 0, status: 'HEALTHY' },
-    { name: 'analytics', waiting: 0, active: 0, completed: 48, failed: 0, status: 'HEALTHY' },
-    { name: 'notification', waiting: 0, active: 0, completed: 520, failed: 0, status: 'HEALTHY' },
-    { name: 'email', waiting: 0, active: 0, completed: 14, failed: 0, status: 'HEALTHY' },
-  ];
+  const { currentWorkspace, workspaces } = useWorkspaceStore();
+  const workspaceId =
+    currentWorkspace?.id || (workspaces.length > 0 ? workspaces[0].id : 'default');
 
-  const providers = [
-    { provider: 'Google Gemini', model: 'gemini-2.0-flash', latency: '420ms', status: 'ACTIVE' },
-    { provider: 'Groq', model: 'llama-3.3-70b-versatile', latency: '210ms', status: 'STANDBY' },
-    { provider: 'OpenAI', model: 'gpt-4o-mini', latency: '650ms', status: 'STANDBY' },
-    { provider: 'Anthropic', model: 'claude-3-5-sonnet', latency: '820ms', status: 'STANDBY' },
-  ];
+  // Real health and readiness probes from NestJS /health and /ready
+  const { data: health, isLoading: isHealthLoading } = useQuery({
+    queryKey: ['admin', 'health'],
+    queryFn: () => adminService.getHealth(),
+  });
+
+  const { data: readiness, isLoading: isReadinessLoading } = useQuery({
+    queryKey: ['admin', 'readiness'],
+    queryFn: () => adminService.getReadiness(),
+  });
+
+  // Real BullMQ job telemetry
+  const { data: jobs, isLoading: isJobsLoading } = useQuery({
+    queryKey: ['admin', 'jobs', workspaceId],
+    queryFn: () => analyticsService.getJobs(workspaceId),
+    enabled: Boolean(workspaceId && workspaceId !== 'default'),
+  });
+
+  // Real AI provider metrics
+  const { data: ai, isLoading: isAiLoading } = useQuery({
+    queryKey: ['admin', 'ai', workspaceId],
+    queryFn: () => analyticsService.getAi(workspaceId),
+    enabled: Boolean(workspaceId && workspaceId !== 'default'),
+  });
+
+  const isLoading = isHealthLoading && isReadinessLoading && isJobsLoading && isAiLoading;
+
+  if (isLoading) {
+    return <AdminSkeleton />;
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground sm:text-2xl">Platform Administration</h1>
-        <p className="text-xs text-muted-foreground">
-          System telemetry, BullMQ background queues, Redis state, and AI provider status.
+    <div className="space-y-8 pb-16">
+      {/* 1. Header */}
+      <div className="space-y-1 pb-4 border-b border-slate-800/80">
+        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          Platform Operations & Telemetry
+        </h1>
+        <p className="text-xs text-slate-400">
+          Infrastructure health, BullMQ background queues, pgvector embedding pipelines, and AI
+          provider routing.
         </p>
       </div>
 
-      {/* BullMQ Queues */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">BullMQ Queue Status (Redis ≥ 5.0)</h2>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Queue Name</TableHead>
-              <TableHead>Waiting</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Completed</TableHead>
-              <TableHead>Failed</TableHead>
-              <TableHead className="text-right">Health</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {queues.map((q) => (
-              <TableRow key={q.name}>
-                <TableCell className="font-mono font-semibold">{q.name}</TableCell>
-                <TableCell>{q.waiting}</TableCell>
-                <TableCell>{q.active}</TableCell>
-                <TableCell className="text-success font-semibold">{q.completed}</TableCell>
-                <TableCell className={q.failed > 0 ? 'text-destructive font-semibold' : ''}>
-                  {q.failed}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge size="sm" variant="success" dot>
-                    {q.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {/* 2. System Infrastructure Health */}
+      <AdminSystemHealth health={health} readiness={readiness} />
 
-      {/* AI Providers */}
-      <div className="space-y-3 pt-4">
-        <h2 className="text-sm font-semibold text-foreground">AI Provider Abstraction Layer</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {providers.map((p) => (
-            <Card key={p.provider} className="p-4 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-foreground">{p.provider}</span>
-                <Badge size="sm" variant={p.status === 'ACTIVE' ? 'ai' : 'secondary'}>
-                  {p.status}
-                </Badge>
-              </div>
-              <div className="text-xs font-mono text-muted-foreground truncate">{p.model}</div>
-              <div className="text-[11px] text-muted-foreground">Avg Latency: {p.latency}</div>
-            </Card>
-          ))}
-        </div>
-      </div>
+      {/* 3. BullMQ Queues Status Table */}
+      <AdminQueuesTable jobs={jobs} />
+
+      {/* 4. AI Provider Abstraction Layer */}
+      <AdminProvidersGrid ai={ai} />
+
+      {/* 5. Registered Workspaces Overview */}
+      <AdminWorkspacesTable workspaces={workspaces} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useWorkspaceStore } from '@/store/workspace.store';
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import { cn } from '@/utils/cn';
 export function WorkspaceSwitcher({ className }: { className?: string }) {
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
   const { currentWorkspace, workspaces, setCurrentWorkspace } = useWorkspaceStore();
 
   const slug = (params?.workspaceSlug as string) || currentWorkspace?.slug;
@@ -37,16 +39,22 @@ export function WorkspaceSwitcher({ className }: { className?: string }) {
   const displayName = activeWorkspace?.name || 'Workspace';
   const displaySlug = activeWorkspace?.slug || 'workspace';
 
+  const handleSwitchWorkspace = (ws: (typeof workspaces)[0]) => {
+    queryClient.removeQueries();
+    setCurrentWorkspace(ws);
+    router.push(`/${ws.slug}/dashboard`);
+  };
+
   return (
     <div className={cn('relative w-full', className)}>
       <DropdownMenu>
-        <DropdownMenuTrigger className="w-full">
-          <div className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-[#0b101f] p-2.5 text-left shadow-md transition-colors hover:border-blue-500/50 hover:bg-slate-900/80 cursor-pointer">
+        <DropdownMenuTrigger className="w-full text-left focus:outline-none">
+          <div className="flex w-full items-center justify-between rounded-xl border border-border/80 bg-[#0b101f] p-2 sm:p-2.5 text-left shadow-md transition-colors hover:border-primary/50 hover:bg-slate-900/80 cursor-pointer">
             <div className="flex items-center gap-2.5 min-w-0">
               <Avatar
                 fallback={displayName}
                 size="sm"
-                className="rounded-lg bg-blue-950/70 text-blue-400 border border-blue-500/30 font-bold text-xs"
+                className="rounded-lg bg-primary/15 text-primary border border-primary/30 font-bold text-xs shrink-0"
               />
               <div className="flex flex-col truncate">
                 <span className="truncate text-xs font-semibold text-white capitalize">
@@ -71,38 +79,47 @@ export function WorkspaceSwitcher({ className }: { className?: string }) {
           </div>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent align="left" className="w-60 bg-[#0b101f] border-slate-800 shadow-2xl">
-          <DropdownMenuLabel>Switch Workspace</DropdownMenuLabel>
+        <DropdownMenuContent
+          align="left"
+          className="w-60 bg-[#0b101f] border-border/80 shadow-2xl rounded-2xl p-1.5"
+        >
+          <DropdownMenuLabel className="text-[11px] font-bold text-slate-400 font-mono uppercase tracking-wider px-2 py-1.5">
+            Your Workspaces
+          </DropdownMenuLabel>
           {workspaces.length > 0 ? (
-            workspaces.map((ws) => (
-              <DropdownMenuItem
-                key={ws.id || ws.slug}
-                onClick={() => {
-                  setCurrentWorkspace(ws);
-                  router.push(`/${ws.slug}/dashboard`);
-                }}
-                className={cn(
-                  'flex items-center justify-between my-0.5',
-                  activeWorkspace &&
-                    ws.slug === activeWorkspace.slug &&
-                    'bg-blue-950/50 text-blue-400 font-semibold border border-blue-500/20',
-                )}
-              >
-                <div className="flex items-center gap-2 truncate">
-                  <Avatar
-                    fallback={ws.name}
-                    size="sm"
-                    className="h-5 w-5 text-[9px] bg-slate-900 border border-slate-800"
-                  />
-                  <span className="truncate text-xs">{ws.name}</span>
-                </div>
-                {ws.role && (
-                  <Badge size="sm" variant="secondary" className="text-[9px] font-mono">
-                    {String(ws.role)}
-                  </Badge>
-                )}
-              </DropdownMenuItem>
-            ))
+            workspaces.map((ws) => {
+              const isCurrent = activeWorkspace && ws.slug === activeWorkspace.slug;
+              return (
+                <DropdownMenuItem
+                  key={ws.id || ws.slug}
+                  onClick={() => handleSwitchWorkspace(ws)}
+                  className={cn(
+                    'flex items-center justify-between rounded-xl px-2.5 py-2 my-0.5 cursor-pointer',
+                    isCurrent
+                      ? 'bg-primary/20 text-white font-semibold border border-primary/30'
+                      : 'text-slate-300 hover:bg-slate-800/60 hover:text-white',
+                  )}
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <Avatar
+                      fallback={ws.name}
+                      size="sm"
+                      className="h-5 w-5 text-[9px] bg-slate-900 border border-border shrink-0"
+                    />
+                    <span className="truncate text-xs">{ws.name}</span>
+                  </div>
+                  {ws.role && (
+                    <Badge
+                      size="sm"
+                      variant="secondary"
+                      className="text-[9px] font-mono shrink-0 ml-1"
+                    >
+                      {String(ws.role)}
+                    </Badge>
+                  )}
+                </DropdownMenuItem>
+              );
+            })
           ) : (
             <DropdownMenuItem
               onClick={() => router.push('/workspaces')}
@@ -112,10 +129,10 @@ export function WorkspaceSwitcher({ className }: { className?: string }) {
             </DropdownMenuItem>
           )}
 
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="bg-border/60 my-1" />
           <DropdownMenuItem
             onClick={() => router.push('/workspaces')}
-            className="text-blue-400 hover:text-blue-300"
+            className="text-primary hover:text-primary/80 rounded-xl px-2.5 py-2 cursor-pointer font-medium"
           >
             <svg
               className="mr-2 h-3.5 w-3.5"
@@ -128,7 +145,7 @@ export function WorkspaceSwitcher({ className }: { className?: string }) {
               <line x1="12" x2="12" y1="5" y2="19" />
               <line x1="5" x2="19" y1="12" y2="12" />
             </svg>
-            <span className="text-xs font-semibold">Manage Workspaces</span>
+            <span className="text-xs">Manage Workspaces</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

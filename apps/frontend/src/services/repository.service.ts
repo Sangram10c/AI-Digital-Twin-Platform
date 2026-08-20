@@ -20,6 +20,7 @@ export interface Repository {
   lastSyncedAt?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  htmlUrl?: string;
 }
 
 interface RawRepository {
@@ -98,6 +99,18 @@ export const repositoryService = {
       params: { workspaceId },
     });
     return data;
+  },
+
+  /**
+   * Get single repository by ID in workspace
+   */
+  async getRepositoryById(workspaceId: string, repositoryId: string): Promise<Repository | null> {
+    try {
+      const repos = await this.getRepositories(workspaceId);
+      return repos.find((r) => r.id === repositoryId) || null;
+    } catch {
+      return null;
+    }
   },
 
   /**

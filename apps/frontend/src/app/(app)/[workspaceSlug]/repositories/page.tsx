@@ -291,7 +291,12 @@ export default function RepositoriesPage() {
                     className="border-b border-slate-800/60 hover:bg-slate-900/40"
                   >
                     <TableCell className="font-semibold text-white">
-                      <div>{repo.name}</div>
+                      <Link
+                        href={`/${slug}/repositories/${repo.id}`}
+                        className="hover:text-blue-400 transition-colors font-bold block"
+                      >
+                        {repo.name}
+                      </Link>
                       <div className="text-[10px] text-slate-400 font-mono">
                         {repo.owner ? `${repo.owner}/${repo.name}` : repo.name}
                       </div>
@@ -317,7 +322,16 @@ export default function RepositoriesPage() {
                     <TableCell className="text-slate-400 text-xs font-mono">
                       {repo.lastSyncedAt ? new Date(repo.lastSyncedAt).toLocaleString() : 'Never'}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-2">
+                      <Link href={`/${slug}/chat?repositoryId=${repo.id}`}>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs text-blue-400 hover:text-blue-300"
+                        >
+                          Chat
+                        </Button>
+                      </Link>
                       {(() => {
                         const isThisRepoSyncing = syncingRepoId === repo.id;
                         return (

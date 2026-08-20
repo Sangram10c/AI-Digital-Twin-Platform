@@ -1,6 +1,6 @@
 /**
  * Workspace Types & Role Enums
- * Mapped directly to backend Prisma schema.
+ * Mapped directly to backend Prisma schema & NestJS Workspace DTOs.
  */
 
 export enum WorkspaceRole {
@@ -17,28 +17,40 @@ export enum WorkspaceStatus {
   DELETED = 'DELETED',
 }
 
+export interface WorkspacePreferences {
+  defaultBranch?: string;
+  visibility?: 'private' | 'internal' | 'public';
+  timezone?: string;
+  language?: string;
+}
+
+export interface WorkspaceSettings {
+  defaultAiProvider?: string | null;
+  defaultAiModel?: string | null;
+  defaultEmbeddingModel?: string | null;
+  autoSyncEnabled: boolean;
+  notificationsEnabled: boolean;
+  preferences?: WorkspacePreferences | null;
+}
+
 export interface WorkspaceMember {
   id: string;
-  workspaceId: string;
   userId: string;
+  email: string;
+  displayName?: string | null;
   role: WorkspaceRole;
   joinedAt: string;
-  user?: {
-    id: string;
-    email: string;
-    displayName?: string;
-    avatarUrl?: string;
-  };
 }
 
 export interface Workspace {
   id: string;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
   ownerId?: string;
   status?: WorkspaceStatus;
   role?: WorkspaceRole | string;
+  settings?: WorkspaceSettings;
   createdAt?: string;
   updatedAt?: string;
 }

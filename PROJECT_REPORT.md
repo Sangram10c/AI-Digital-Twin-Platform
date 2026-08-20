@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: August 20, 2026 at 02:43 PM
+> Generated: August 20, 2026 at 06:01 PM
 
 ---
 
@@ -63,9 +63,9 @@
 
 ## 🔀 Git Status
 
-- **Branch:** Authentication-Identity
-- **Last Commit:** Merge pull request #137 from Sangram10c/Folder-str
-- **Commit Hash:** 196fb69
+- **Branch:** Application-Shell-Navigation
+- **Last Commit:** Merge pull request #138 from Sangram10c/Authentication-Identity
+- **Commit Hash:** e25f4e2
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -73,25 +73,25 @@
 
 - CURRENT_STATUS.md
 - PROJECT_REPORT.md
-- apps/backend/src/modules/github/dto/index.ts
-- apps/backend/src/modules/github/github.controller.ts
-- apps/backend/src/modules/github/github.service.ts
-- apps/backend/src/modules/github/services/github-api.client.ts
-- apps/backend/src/modules/workspaces/workspaces.controller.ts
-- apps/backend/src/modules/workspaces/workspaces.service.ts
+- apps/frontend/src/app/(admin)/admin/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/analytics/page.tsx
-- apps/frontend/src/app/(app)/[workspaceSlug]/chat/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/dashboard/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/knowledge/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/repositories/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/search/page.tsx
+- apps/frontend/src/app/(app)/[workspaceSlug]/settings/page.tsx
 - apps/frontend/src/app/(app)/[workspaceSlug]/timeline/page.tsx
-- apps/frontend/src/app/(app)/workspaces/page.tsx
-- apps/frontend/src/app/(auth)/callback/page.tsx
-- apps/frontend/src/app/(auth)/layout.tsx
-- apps/frontend/src/app/(auth)/login/page.tsx
-- apps/frontend/src/app/(auth)/register/page.tsx
-- _...and 51 more_
+- apps/frontend/src/app/(public)/docs/page.tsx
+- apps/frontend/src/components/layout/app-header.tsx
+- apps/frontend/src/components/layout/app-sidebar.tsx
+- apps/frontend/src/components/layout/index.ts
+- apps/frontend/src/components/layout/workspace-switcher.tsx
+- apps/frontend/src/components/shared/breadcrumbs.tsx
+- apps/frontend/src/components/shared/command-palette.tsx
+- apps/frontend/src/components/shared/empty-state.tsx
+- apps/frontend/src/components/shared/index.ts
+- apps/frontend/src/features/admin/components/index.ts
+- _...and 83 more_
 
 ---
 

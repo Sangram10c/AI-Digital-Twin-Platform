@@ -1,1 +1,9 @@
-// Dashboard feature components placeholder
+export * from './dashboard-header';
+export * from './metric-card';
+export * from './metric-grid';
+export * from './repository-summary';
+export * from './repository-health';
+export * from './recent-conversations';
+export * from './ai-search-summary';
+export * from './empty-dashboard';
+export * from './dashboard-skeleton';

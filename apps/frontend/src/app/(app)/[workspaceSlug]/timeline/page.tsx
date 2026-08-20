@@ -1,13 +1,15 @@
 'use client';
 
+import * as React from 'react';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select } from '@/components/ui/select';
 import { useWorkspaceStore } from '@/store/workspace.store';
 import { repositoryService } from '@/services/repository.service';
 import { chatService } from '@/services/chat.service';
-import { LoadingSpinner } from '@/components/shared/loading-spinner';
+import { TimelineItem, TimelineSkeleton, TimelineEvent } from '@/features/timeline';
 
 export default function TimelinePage() {
   const params = useParams();
@@ -23,72 +25,155 @@ export default function TimelinePage() {
 
   const workspaceId = activeWorkspace.id;
 
+  const [activeFilter, setActiveFilter] = React.useState<string>('ALL');
+  const [selectedRepoId, setSelectedRepoId] = React.useState<string>('ALL');
+
+  // Real repositories query
   const { data: repositories = [], isLoading: isReposLoading } = useQuery({
     queryKey: ['workspace', workspaceId, 'repositories'],
     queryFn: () => repositoryService.getRepositories(workspaceId),
     enabled: Boolean(workspaceId && workspaceId !== 'default'),
   });
 
+  // Real conversations query
   const { data: convResponse, isLoading: isChatsLoading } = useQuery({
     queryKey: ['workspace', workspaceId, 'conversations'],
     queryFn: () => chatService.listConversations(workspaceId),
     enabled: Boolean(workspaceId && workspaceId !== 'default'),
   });
 
-  const conversations = convResponse?.data || [];
+  const conversations = React.useMemo(() => convResponse?.data || [], [convResponse]);
   const isLoading = isReposLoading || isChatsLoading;
 
-  // Derive real timeline events from connected repositories and conversation creations
-  const events: Array<{
-    date: string;
-    type: string;
-    title: string;
-    description: string;
-    author: string;
-  }> = [];
+  // Derive chronological events from real backend data
+  const events: TimelineEvent[] = React.useMemo(() => {
+    const list: TimelineEvent[] = [];
 
-  repositories.forEach((repo) => {
-    if (repo.lastSyncedAt) {
-      events.push({
-        date: new Date(repo.lastSyncedAt).toLocaleDateString(),
-        type: 'REPOSITORY_SYNC',
-        title: `Repository Synchronized: ${repo.name}`,
-        description: `Synchronized ${repo.commitsCount ?? 0} commits and ${repo.pullRequestsCount ?? 0} PRs on branch ${repo.defaultBranch || 'main'}.`,
-        author: repo.owner || 'System',
-      });
-    }
-  });
+    repositories.forEach((repo) => {
+      if (repo.lastSyncedAt) {
+        list.push({
+          id: `sync-${repo.id}`,
+          date: new Date(repo.lastSyncedAt).toLocaleString(),
+          type: 'REPOSITORY_SYNC',
+          title: `Repository Synchronized: ${repo.name}`,
+          description: `Full AST extraction and pgvector embeddings generated for ${repo.commitsCount ?? 0} commits on branch ${repo.defaultBranch || 'main'}.`,
+          author: repo.owner || 'System Worker',
+          repositoryName: repo.name,
+          badgeText: 'Sync Complete',
+        });
+      }
 
-  conversations.forEach((conv) => {
-    events.push({
-      date: new Date(conv.createdAt).toLocaleDateString(),
-      type: 'AI_CONVERSATION',
-      title: conv.title || 'AI RAG Conversation',
-      description: `Grounded AI chat thread created with ${conv.messageCount} messages.`,
-      author: 'Developer',
+      if (repo.commitsCount && repo.commitsCount > 0) {
+        list.push({
+          id: `commit-${repo.id}`,
+          date: repo.updatedAt ? new Date(repo.updatedAt).toLocaleString() : 'Recent',
+          type: 'COMMIT',
+          title: `Codebase Commits Synced`,
+          description: `Tracked ${repo.commitsCount} commits across branch ${repo.defaultBranch || 'main'}.`,
+          author: repo.owner || 'GitHub Webhook',
+          repositoryName: repo.name,
+          badgeText: `${repo.commitsCount} Commits`,
+        });
+      }
+
+      if (repo.pullRequestsCount && repo.pullRequestsCount > 0) {
+        list.push({
+          id: `pr-${repo.id}`,
+          date: repo.updatedAt ? new Date(repo.updatedAt).toLocaleString() : 'Recent',
+          type: 'PULL_REQUEST',
+          title: `Pull Request Intelligence Indexed`,
+          description: `Processed metadata and discussions for ${repo.pullRequestsCount} pull requests.`,
+          author: repo.owner || 'GitHub API',
+          repositoryName: repo.name,
+          badgeText: `${repo.pullRequestsCount} PRs`,
+        });
+      }
     });
-  });
+
+    conversations.forEach((conv) => {
+      list.push({
+        id: `chat-${conv.id}`,
+        date: new Date(conv.createdAt).toLocaleString(),
+        type: 'AI_CONVERSATION',
+        title: conv.title || 'AI RAG Session',
+        description: `Grounded twin conversation created with ${conv.messageCount} messages.`,
+        author: 'Developer',
+        repositoryName: conv.repositoryName || 'Workspace',
+        badgeText: `${conv.messageCount} Messages`,
+      });
+    });
+
+    return list;
+  }, [repositories, conversations]);
+
+  const filteredEvents = React.useMemo(() => {
+    return events.filter((e) => {
+      if (activeFilter !== 'ALL' && e.type !== activeFilter) return false;
+      if (selectedRepoId !== 'ALL' && e.repositoryName !== selectedRepoId) return false;
+      return true;
+    });
+  }, [events, activeFilter, selectedRepoId]);
+
+  const repoOptions = [
+    { value: 'ALL', label: 'All Repositories' },
+    ...repositories.map((r) => ({
+      value: r.name,
+      label: r.name,
+    })),
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-slate-800 pb-5">
-        <h1 className="text-xl font-bold text-white sm:text-2xl">Engineering Timeline</h1>
+    <div className="space-y-6 max-w-5xl pb-16">
+      {/* 1. Header */}
+      <div className="space-y-1 pb-4 border-b border-slate-800/80">
+        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          Engineering Activity Timeline
+        </h1>
         <p className="text-xs text-slate-400">
-          Chronological time-series of repository commits, PR merges, architectural milestones, and
-          sync events.
+          Chronological audit trail of repository synchronizations, commits, pull requests, and AI
+          RAG sessions.
         </p>
       </div>
 
+      {/* 2. Filter Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <Tabs value={activeFilter} onValueChange={setActiveFilter}>
+          <TabsList className="bg-slate-900 border border-slate-800 h-8 p-0.5 rounded-lg">
+            <TabsTrigger value="ALL" className="text-xs px-3 h-7">
+              All Activity
+            </TabsTrigger>
+            <TabsTrigger value="REPOSITORY_SYNC" className="text-xs px-3 h-7">
+              Syncs
+            </TabsTrigger>
+            <TabsTrigger value="AI_CONVERSATION" className="text-xs px-3 h-7">
+              AI Chats
+            </TabsTrigger>
+            <TabsTrigger value="COMMIT" className="text-xs px-3 h-7">
+              Commits
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {repositories.length > 0 && (
+          <div className="w-48">
+            <Select
+              value={selectedRepoId}
+              onChange={(e) => setSelectedRepoId(e.target.value)}
+              options={repoOptions}
+              className="h-8 text-xs bg-slate-900 border-slate-800"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* 3. Timeline Items / Empty State */}
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center p-12 space-y-3">
-          <LoadingSpinner size="lg" />
-          <span className="text-xs text-slate-400 font-mono">Loading activity timeline...</span>
-        </div>
-      ) : events.length === 0 ? (
+        <TimelineSkeleton />
+      ) : filteredEvents.length === 0 ? (
         <Card className="border border-slate-800 bg-[#0b101f] p-12 text-center rounded-2xl shadow-xl space-y-4">
           <div className="flex justify-center text-4xl">⏱️</div>
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-white">No engineering events recorded yet</h3>
+            <h3 className="text-base font-bold text-white">No activity events recorded yet</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
               Activity timeline will populate automatically as repositories are synchronized and AI
               conversations take place.
@@ -96,24 +181,9 @@ export default function TimelinePage() {
           </div>
         </Card>
       ) : (
-        <div className="relative border-l border-slate-800 ml-4 space-y-6 pl-6">
-          {events.map((event, i) => (
-            <div key={i} className="relative">
-              <div className="absolute -left-[31px] top-1.5 h-3 w-3 rounded-full border-2 border-[#050811] bg-blue-500" />
-              <Card className="p-4 space-y-1.5 border-slate-800 bg-[#0b101f]">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-slate-400 text-[10px]">{event.date}</span>
-                  <Badge size="sm" variant="secondary" className="font-mono text-[9px]">
-                    {event.type}
-                  </Badge>
-                </div>
-                <CardTitle className="text-sm text-white">{event.title}</CardTitle>
-                <CardDescription className="text-xs text-slate-400">
-                  {event.description}
-                </CardDescription>
-                <div className="text-[10px] text-slate-400 pt-1 font-mono">By {event.author}</div>
-              </Card>
-            </div>
+        <div className="relative border-l border-slate-800/80 ml-3.5 space-y-6">
+          {filteredEvents.map((event) => (
+            <TimelineItem key={event.id} event={event} />
           ))}
         </div>
       )}
