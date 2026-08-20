@@ -1,4 +1,11 @@
-export { api } from './api.service';
-export { authService } from './auth.service';
-export { userService } from './user.service';
-export { socketService } from './socket.service';
+export * from './api.service';
+export * from './auth.service';
+export * from './workspace.service';
+export * from './repository.service';
+export * from './github.service';
+export * from './chat.service';
+export * from './search.service';
+export * from './knowledge.service';
+export * from './analytics.service';
+export * from './user.service';
+export * from './socket.service';

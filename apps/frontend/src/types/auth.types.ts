@@ -6,18 +6,31 @@ export interface LoginCredentials {
 }
 
 export interface RegisterCredentials {
-  name: string;
   email: string;
   password: string;
+  displayName?: string;
+  firstName?: string;
+  lastName?: string;
 }
 
-export interface AuthResponse {
-  user: User;
-  accessToken: string;
-  refreshToken?: string;
+export interface ForgotPasswordCredentials {
+  email: string;
+}
+
+export interface ResetPasswordCredentials {
+  token: string;
+  newPassword: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken?: string;
+  refreshToken: string;
+  tokenType?: string;
+  expiresIn?: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  tokens: AuthTokens;
+  devToken?: string;
 }

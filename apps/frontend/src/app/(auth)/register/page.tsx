@@ -3,6 +3,9 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,96 +18,150 @@ import {
 } from '@/components/ui/card';
 import { useAuthStore } from '@/store/auth.store';
 import { authService } from '@/services/auth.service';
+import type { AuthResponse } from '@/types/auth.types';
+
+const registerSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Please enter a valid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    confirmPassword: z.string().min(8, 'Please confirm your password'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
   const { login } = useAuthStore();
-  const [name, setName] = React.useState('');
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !email || !password) {
-      setError('Please fill in all fields.');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters long.');
-      return;
-    }
-
+  const onSubmit = async (data: RegisterFormData) => {
     setIsLoading(true);
-    setError(null);
+    setServerError(null);
 
     try {
-      const response = await authService.register({ name, email, password });
-      if (response && response.user && response.accessToken) {
-        login(response.user, response.accessToken);
+      const response = await authService.register({
+        email: data.email,
+        password: data.password,
+        displayName: data.name,
+      });
+
+      const payload: AuthResponse =
+        response && typeof response === 'object' && 'data' in response
+          ? (response as { data: AuthResponse }).data
+          : response;
+
+      if (payload && payload.user && payload.tokens) {
+        login(payload.user, payload.tokens);
         router.push('/workspaces');
       } else {
         router.push('/login?registered=true');
       }
     } catch (err: unknown) {
-      const apiErr = err as { response?: { data?: { message?: string | string[] } } };
-      const msg = apiErr.response?.data?.message || 'Registration failed. Please try again.';
-      setError(Array.isArray(msg) ? msg.join(', ') : msg);
+      const apiErr = err as {
+        response?: { status?: number; data?: { message?: string | string[] } };
+      };
+      if (apiErr.response?.status === 409) {
+        setServerError(
+          'An account with this email address already exists. Please sign in instead.',
+        );
+      } else {
+        const msg =
+          apiErr.response?.data?.message ||
+          'Registration failed. Please check your details and try again.';
+        setServerError(Array.isArray(msg) ? msg.join(', ') : msg);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card className="glass-panel border border-border shadow-xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-xl">Create your account</CardTitle>
-        <CardDescription>
+    <Card className="border border-slate-800/80 bg-[#0b101f] shadow-2xl rounded-2xl">
+      <CardHeader className="space-y-1.5 p-6">
+        <CardTitle className="text-xl font-bold text-white">Create your account</CardTitle>
+        <CardDescription className="text-xs text-slate-400">
           Get started with your AI Digital Twin engineering workspace.
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
-        <form onSubmit={handleRegister} className="space-y-4">
-          {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              {error}
-            </div>
-          )}
+      <CardContent className="p-6 pt-0 space-y-4">
+        {serverError && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-950/30 p-3 text-xs text-rose-300">
+            {serverError}
+          </div>
+        )}
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Full Name</label>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Full Name</label>
             <Input
               type="text"
               placeholder="Sarah Connor"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+              autoComplete="name"
+              {...register('name')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
             />
+            {errors.name && <p className="text-[11px] text-rose-400">{errors.name.message}</p>}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Work Email</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Work Email</label>
             <Input
               type="email"
               placeholder="developer@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              autoComplete="email"
+              {...register('email')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
             />
+            {errors.email && <p className="text-[11px] text-rose-400">{errors.email.message}</p>}
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-foreground">Password</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Password</label>
             <Input
               type="password"
               placeholder="•••••••• (min 8 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              autoComplete="new-password"
+              {...register('password')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
             />
+            {errors.password && (
+              <p className="text-[11px] text-rose-400">{errors.password.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-slate-300">Confirm Password</label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              autoComplete="new-password"
+              {...register('confirmPassword')}
+              className="bg-slate-900/60 border-slate-800 focus:border-blue-500 text-white text-xs"
+            />
+            {errors.confirmPassword && (
+              <p className="text-[11px] text-rose-400">{errors.confirmPassword.message}</p>
+            )}
           </div>
 
           <Button type="submit" variant="ai" className="w-full" isLoading={isLoading}>
@@ -113,9 +170,9 @@ export default function RegisterPage() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex justify-center border-t border-border pt-4 text-xs text-muted-foreground">
+      <CardFooter className="flex justify-center border-t border-slate-800 p-6 pt-4 text-xs text-slate-400">
         <span>Already have an account? </span>
-        <Link href="/login" className="ml-1 font-semibold text-primary hover:underline">
+        <Link href="/login" className="ml-1 font-semibold text-blue-400 hover:text-blue-300">
           Sign in
         </Link>
       </CardFooter>

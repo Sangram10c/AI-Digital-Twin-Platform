@@ -141,6 +141,57 @@ export class GithubApiClient {
     );
   }
 
+  async listUserRepositories(
+    accessToken: string,
+    page = 1,
+    perPage = 100,
+  ): Promise<
+    Array<{
+      id: number;
+      name: string;
+      full_name: string;
+      owner: { login: string; avatar_url?: string };
+      private: boolean;
+      description: string | null;
+      fork: boolean;
+      url: string;
+      html_url: string;
+      default_branch: string;
+      language: string | null;
+      stargazers_count: number;
+      updated_at: string;
+    }>
+  > {
+    const apiBaseUrl =
+      this.configService.get<string>('oauth.github.apiBaseUrl') ??
+      'https://api.github.com';
+
+    const url = `${apiBaseUrl}/user/repos?sort=updated&per_page=${perPage}&page=${page}&affiliation=owner,collaborator,organization_member`;
+    const response = await this.requestWithRateLimit(url, accessToken);
+
+    if (!response.ok) {
+      this.logger.warn(`Failed to fetch user repos (${response.status})`);
+      return [];
+    }
+
+    const data = (await response.json()) as Array<{
+      id: number;
+      name: string;
+      full_name: string;
+      owner: { login: string; avatar_url?: string };
+      private: boolean;
+      description: string | null;
+      fork: boolean;
+      url: string;
+      html_url: string;
+      default_branch: string;
+      language: string | null;
+      stargazers_count: number;
+      updated_at: string;
+    }>;
+    return Array.isArray(data) ? data : [];
+  }
+
   async getRepositoryFileContent(input: {
     accessToken: string;
     owner: string;
