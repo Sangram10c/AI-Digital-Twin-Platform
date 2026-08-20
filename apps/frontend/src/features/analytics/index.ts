@@ -1,5 +1,2 @@
-/**
- * Analytics Feature Module
- */
-
-// export * from './components';
+export * from './components';
+export * from './types/analytics.types';

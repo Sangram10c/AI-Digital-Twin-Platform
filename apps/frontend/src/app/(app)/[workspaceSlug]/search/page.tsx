@@ -1,20 +1,32 @@
 'use client';
 
 import * as React from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Card, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useWorkspaceStore } from '@/store/workspace.store';
 import { searchService } from '@/services/search.service';
-import { LoadingSpinner } from '@/components/shared/loading-spinner';
+import { repositoryService } from '@/services/repository.service';
+import {
+  SearchInput,
+  SearchToolbar,
+  SearchResultCard,
+  SourceViewer,
+  SearchEmptyState,
+  SearchSkeleton,
+  SearchMode,
+} from '@/features/search';
+import { ErrorState } from '@/components/shared/error-state';
 
 export default function SearchPage() {
   const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const slug = (params?.workspaceSlug as string) || 'default';
+  const initialQuery = searchParams.get('q') || '';
+  const initialMode = (searchParams.get('mode') as SearchMode) || 'hybrid';
+  const initialRepoId = searchParams.get('repositoryId') || 'ALL';
+
   const { currentWorkspace, workspaces } = useWorkspaceStore();
 
   const activeWorkspace = currentWorkspace ||
@@ -26,144 +38,167 @@ export default function SearchPage() {
 
   const workspaceId = activeWorkspace.id;
 
-  const [inputVal, setInputVal] = React.useState('');
-  const [activeQuery, setActiveQuery] = React.useState('');
-  const [searchMode, setSearchMode] = React.useState('hybrid');
+  const [inputVal, setInputVal] = React.useState(initialQuery);
+  const [activeQuery, setActiveQuery] = React.useState(initialQuery);
+  const [searchMode, setSearchMode] = React.useState<SearchMode>(initialMode);
+  const [selectedRepoId, setSelectedRepoId] = React.useState<string>(initialRepoId);
+  const [selectedChunkId, setSelectedChunkId] = React.useState<string | null>(null);
 
+  // Sync state to URL
+  const updateUrl = (query: string, mode: SearchMode, repoId: string) => {
+    const p = new URLSearchParams();
+    if (query) p.set('q', query);
+    if (mode && mode !== 'hybrid') p.set('mode', mode);
+    if (repoId && repoId !== 'ALL') p.set('repositoryId', repoId);
+
+    const qs = p.toString();
+    router.replace(`/${slug}/search${qs ? `?${qs}` : ''}`);
+  };
+
+  // Fetch connected repositories for repository filter
+  const { data: repositories = [] } = useQuery({
+    queryKey: ['workspace', workspaceId, 'repositories'],
+    queryFn: () => repositoryService.getRepositories(workspaceId),
+    enabled: Boolean(workspaceId && workspaceId !== 'default'),
+  });
+
+  // Execute Search query
   const {
     data: searchResponse,
     isLoading,
     isFetching,
+    isError,
+    refetch,
   } = useQuery({
-    queryKey: ['workspace', workspaceId, 'search', activeQuery, searchMode],
+    queryKey: ['workspace', workspaceId, 'search', activeQuery, searchMode, selectedRepoId],
     queryFn: () =>
       searchService.search({
         workspaceId,
         query: activeQuery,
-        limit: 20,
+        mode: searchMode,
+        repositoryIds: selectedRepoId !== 'ALL' ? [selectedRepoId] : undefined,
+        pageSize: 25,
       }),
     enabled: Boolean(workspaceId && workspaceId !== 'default' && activeQuery.trim()),
   });
 
-  const results = searchResponse?.results || [];
+  const results = React.useMemo(() => searchResponse?.results || [], [searchResponse]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputVal.trim()) {
-      setActiveQuery(inputVal.trim());
+  // Derived selected hit without effect
+  const selectedHit = React.useMemo(() => {
+    if (selectedChunkId) {
+      return results.find((r) => r.chunkId === selectedChunkId) || results[0] || null;
+    }
+    return results[0] || null;
+  }, [results, selectedChunkId]);
+
+  const handleSearchSubmit = (q: string) => {
+    setActiveQuery(q);
+    setSelectedChunkId(null);
+    updateUrl(q, searchMode, selectedRepoId);
+  };
+
+  const handleModeChange = (mode: SearchMode) => {
+    setSearchMode(mode);
+    if (activeQuery) {
+      updateUrl(activeQuery, mode, selectedRepoId);
     }
   };
 
+  const handleRepoChange = (repoId: string) => {
+    setSelectedRepoId(repoId);
+    if (activeQuery) {
+      updateUrl(activeQuery, searchMode, repoId);
+    }
+  };
+
+  const handleClear = () => {
+    setInputVal('');
+    setActiveQuery('');
+    setSelectedChunkId(null);
+    updateUrl('', searchMode, selectedRepoId);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-1 border-b border-slate-800 pb-5">
-        <h1 className="text-xl font-bold text-white sm:text-2xl">Hybrid Code & History Search</h1>
+    <div className="space-y-6 max-w-7xl pb-16">
+      {/* Header */}
+      <div className="space-y-1 pb-4 border-b border-slate-800/80">
+        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          Hybrid Code & Document Search
+        </h1>
         <p className="text-xs text-slate-400">
-          Combines vector semantic embeddings with PostgreSQL full-text search and RRF ranking.
+          Combines dense vector embeddings (pgvector) with PostgreSQL full-text search and RRF
+          reciprocal rank fusion.
         </p>
       </div>
 
-      {/* Search Input Form */}
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3">
-        <Input
-          placeholder="Search functions, architecture, commit diffs, or pull requests..."
-          value={inputVal}
-          onChange={(e) => setInputVal(e.target.value)}
-          className="flex-1 bg-slate-900/80 border-slate-800 text-white text-xs"
-          leftIcon={
-            <svg
-              className="h-4 w-4 text-slate-400"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-          }
+      {/* Search Input Bar */}
+      <SearchInput
+        value={inputVal}
+        onChange={setInputVal}
+        onSubmit={handleSearchSubmit}
+        isSearching={isFetching}
+        onClear={handleClear}
+      />
+
+      {/* Toolbar with Mode & Repository Scope */}
+      <SearchToolbar
+        mode={searchMode}
+        onModeChange={handleModeChange}
+        selectedRepoId={selectedRepoId}
+        onRepoChange={handleRepoChange}
+        repositories={repositories}
+        totalResults={searchResponse?.pagination.total}
+        executionTimeMs={searchResponse?.timing?.totalMs}
+      />
+
+      {/* Content Area */}
+      {isLoading && isFetching ? (
+        <SearchSkeleton />
+      ) : isError ? (
+        <ErrorState
+          title="Search Failed"
+          description="Failed to retrieve search results from hybrid retriever. Please retry."
+          onRetry={() => refetch()}
         />
-        <Tabs value={searchMode} onValueChange={setSearchMode} className="w-auto">
-          <TabsList className="bg-slate-900 border border-slate-800">
-            <TabsTrigger value="hybrid">Hybrid</TabsTrigger>
-            <TabsTrigger value="vector">Vector</TabsTrigger>
-            <TabsTrigger value="keyword">Keyword</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <Button type="submit" variant="ai" disabled={!inputVal.trim() || isFetching}>
-          {isFetching ? 'Searching...' : 'Search'}
-        </Button>
-      </form>
-
-      {/* Search Results Area */}
-      <div className="space-y-3 pt-2">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center p-12 space-y-3">
-            <LoadingSpinner size="lg" />
-            <span className="text-xs text-slate-400 font-mono">
-              Executing hybrid vector search...
-            </span>
+      ) : !activeQuery ? (
+        <SearchEmptyState
+          onSelectSuggestion={(s) => {
+            setInputVal(s);
+            handleSearchSubmit(s);
+          }}
+        />
+      ) : results.length === 0 ? (
+        <div className="p-12 text-center rounded-2xl border border-slate-800 bg-[#0b101f] space-y-2">
+          <div className="text-2xl">🔎</div>
+          <div className="text-sm font-semibold text-white">
+            No results found for &quot;{activeQuery}&quot;
           </div>
-        ) : !activeQuery ? (
-          <Card className="border border-slate-800 bg-[#0b101f] p-12 text-center rounded-2xl shadow-xl space-y-2">
-            <span className="text-3xl">🔍</span>
-            <h3 className="text-sm font-semibold text-white">Enter a search query</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Search across synchronized codebases, commits, architectural decisions, and pull
-              requests.
-            </p>
-          </Card>
-        ) : results.length === 0 ? (
-          <Card className="border border-slate-800 bg-[#0b101f] p-12 text-center rounded-2xl shadow-xl space-y-2">
-            <span className="text-3xl">📭</span>
-            <h3 className="text-sm font-semibold text-white">
-              No results found for &ldquo;{activeQuery}&rdquo;
-            </h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              Try adjusting your query terms, checking repository sync status, or switching search
-              modes.
-            </p>
-          </Card>
-        ) : (
-          <>
-            <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-              <span>Top Results ({results.length})</span>
-              {searchResponse?.executionTimeMs && (
-                <span>Retrieved in {searchResponse.executionTimeMs}ms</span>
-              )}
-            </div>
-
-            {results.map((res, i) => (
-              <Card
-                key={i}
-                interactive
-                className="p-4 space-y-2 border-slate-800 bg-[#0b101f] hover:border-blue-500/50"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Badge size="sm" variant="secondary" className="font-mono text-[9px]">
-                      {res.type}
-                    </Badge>
-                    <CardTitle className="text-sm text-white font-mono">{res.title}</CardTitle>
-                  </div>
-                  <span className="text-[11px] font-mono text-blue-400 font-semibold">
-                    Score: {typeof res.score === 'number' ? res.score.toFixed(3) : res.score}
-                  </span>
-                </div>
-                {res.path && (
-                  <p className="text-xs font-mono text-slate-400 truncate">{res.path}</p>
-                )}
-                {res.snippet && (
-                  <p className="rounded-xl bg-[#050811] p-3 font-mono text-[11px] text-slate-200 leading-relaxed border border-slate-800/80">
-                    {res.snippet}
-                  </p>
-                )}
-              </Card>
+          <p className="text-xs text-slate-400">
+            Try adjusting your search terms, changing the search mode, or clearing repository
+            filters.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Left Column: Result Cards */}
+          <div className="space-y-3 max-h-[660px] overflow-y-auto pr-1">
+            {results.map((hit) => (
+              <SearchResultCard
+                key={hit.chunkId}
+                hit={hit}
+                isSelected={selectedHit?.chunkId === hit.chunkId}
+                onSelect={() => setSelectedChunkId(hit.chunkId)}
+              />
             ))}
-          </>
-        )}
-      </div>
+          </div>
+
+          {/* Right Column: Source Viewer */}
+          <div className="sticky top-4">
+            <SourceViewer hit={selectedHit} slug={slug} onClose={() => setSelectedChunkId(null)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

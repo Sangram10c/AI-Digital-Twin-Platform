@@ -1,5 +1,2 @@
-/**
- * Settings Feature Module
- */
-
-// export * from './components';
+export * from './components';
+export * from './types/settings.types';

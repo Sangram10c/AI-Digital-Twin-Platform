@@ -8,11 +8,14 @@ export type AppPermission =
   | 'chat.use'
   | 'analytics.read'
   | 'workspace.manage'
+  | 'members.read'
+  | 'members.manage'
+  | 'settings.manage'
   | 'users.manage'
   | 'audit.read';
 
 /**
- * Permission Mapping Matrix
+ * Platform Role Permissions Matrix
  */
 const PLATFORM_ROLE_PERMISSIONS: Record<UserRole, AppPermission[]> = {
   [UserRole.ADMIN]: [
@@ -22,13 +25,19 @@ const PLATFORM_ROLE_PERMISSIONS: Record<UserRole, AppPermission[]> = {
     'chat.use',
     'analytics.read',
     'workspace.manage',
+    'members.read',
+    'members.manage',
+    'settings.manage',
     'users.manage',
     'audit.read',
   ],
-  [UserRole.USER]: ['repository.read', 'search.use', 'chat.use', 'analytics.read'],
+  [UserRole.USER]: ['repository.read', 'search.use', 'chat.use', 'analytics.read', 'members.read'],
   [UserRole.VIEWER]: ['repository.read', 'search.use'],
 };
 
+/**
+ * Workspace Role Permissions Matrix (mapped to backend WorkspacePermission constants)
+ */
 const WORKSPACE_ROLE_PERMISSIONS: Record<WorkspaceRole, AppPermission[]> = {
   [WorkspaceRole.OWNER]: [
     'repository.read',
@@ -37,6 +46,9 @@ const WORKSPACE_ROLE_PERMISSIONS: Record<WorkspaceRole, AppPermission[]> = {
     'chat.use',
     'analytics.read',
     'workspace.manage',
+    'members.read',
+    'members.manage',
+    'settings.manage',
   ],
   [WorkspaceRole.ADMIN]: [
     'repository.read',
@@ -45,13 +57,22 @@ const WORKSPACE_ROLE_PERMISSIONS: Record<WorkspaceRole, AppPermission[]> = {
     'chat.use',
     'analytics.read',
     'workspace.manage',
+    'members.read',
+    'members.manage',
+    'settings.manage',
   ],
-  [WorkspaceRole.MEMBER]: ['repository.read', 'search.use', 'chat.use', 'analytics.read'],
+  [WorkspaceRole.MEMBER]: [
+    'repository.read',
+    'search.use',
+    'chat.use',
+    'analytics.read',
+    'members.read',
+  ],
   [WorkspaceRole.VIEWER]: ['repository.read', 'search.use'],
 };
 
 /**
- * Evaluate if a user has a specific permission based on platform role and optional workspace role
+ * Evaluate if a user has a specific permission based on platform role and workspace role
  */
 export function hasPermission(
   permission: AppPermission,

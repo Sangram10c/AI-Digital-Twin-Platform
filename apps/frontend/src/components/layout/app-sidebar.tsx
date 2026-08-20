@@ -7,8 +7,11 @@ import { getWorkspaceNavSections } from '@/config/nav.config';
 import { WorkspaceSwitcher } from './workspace-switcher';
 import { Badge } from '@/components/ui/badge';
 import { Logo } from '@/components/ui/logo';
+import { Tooltip } from '@/components/ui/tooltip';
 import { useUIStore } from '@/store/ui.store';
 import { useWorkspaceStore } from '@/store/workspace.store';
+import { usePermissions } from '@/hooks/use-permissions';
+import { WorkspaceRole } from '@/types/workspace.types';
 import { cn } from '@/utils/cn';
 
 export function AppSidebar() {
@@ -16,9 +19,31 @@ export function AppSidebar() {
   const params = useParams();
   const { isSidebarOpen } = useUIStore();
   const { currentWorkspace } = useWorkspaceStore();
+  const { userRole, workspaceRole, isAdmin } = usePermissions();
 
   const slug = (params?.workspaceSlug as string) || currentWorkspace?.slug || 'default';
-  const navSections = getWorkspaceNavSections(slug);
+  const rawNavSections = getWorkspaceNavSections(slug);
+
+  // Role and permission-aware filtering
+  const navSections = React.useMemo(() => {
+    return rawNavSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter((item) => {
+          if (item.requiredUserRole && (!userRole || !item.requiredUserRole.includes(userRole))) {
+            if (!isAdmin) return false;
+          }
+          if (
+            item.requiredWorkspaceRole &&
+            (!workspaceRole || !item.requiredWorkspaceRole.includes(workspaceRole as WorkspaceRole))
+          ) {
+            if (!isAdmin) return false;
+          }
+          return true;
+        }),
+      }))
+      .filter((section) => section.items.length > 0);
+  }, [rawNavSections, userRole, workspaceRole, isAdmin]);
 
   const iconMap: Record<string, React.ReactNode> = {
     LayoutDashboard: (
@@ -68,7 +93,7 @@ export function AppSidebar() {
     ),
     Bot: (
       <svg
-        className="h-4 w-4 text-ai"
+        className="h-4 w-4 text-primary"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -176,12 +201,13 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        'hidden md:flex flex-col w-64 border-r border-border bg-card/60 backdrop-blur-xs transition-all duration-200 select-none',
-        !isSidebarOpen && 'md:w-16',
+        'hidden md:flex flex-col border-r border-border/80 bg-[#0b101f]/80 backdrop-blur-md transition-all duration-200 select-none shrink-0',
+        isSidebarOpen ? 'w-64' : 'w-16',
       )}
+      aria-label="Sidebar Navigation"
     >
       {/* Workspace Switcher Header */}
-      <div className="flex h-14 items-center border-b border-border px-3">
+      <div className="flex h-14 items-center border-b border-border/80 px-3">
         {isSidebarOpen ? (
           <WorkspaceSwitcher />
         ) : (
@@ -196,32 +222,32 @@ export function AppSidebar() {
         {navSections.map((section) => (
           <div key={section.title} className="space-y-1">
             {isSidebarOpen && (
-              <h4 className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-2">
+              <h4 className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-2 font-mono">
                 {section.title}
               </h4>
             )}
             <nav className="space-y-0.5">
               {section.items.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                return (
+
+                const linkContent = (
                   <Link
-                    key={item.href}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
+                      'flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-medium transition-colors',
                       isActive
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                      !isSidebarOpen && 'justify-center px-0',
+                        ? 'bg-primary/20 text-white border border-primary/30 font-semibold'
+                        : 'text-slate-400 hover:bg-slate-800/60 hover:text-white',
+                      !isSidebarOpen && 'justify-center px-0 h-10 w-10 mx-auto',
                     )}
-                    title={!isSidebarOpen ? item.title : undefined}
+                    aria-current={isActive ? 'page' : undefined}
                   >
                     {item.icon && iconMap[item.icon]}
                     {isSidebarOpen && (
                       <div className="flex items-center justify-between flex-1 truncate">
                         <span className="truncate">{item.title}</span>
                         {item.badge && (
-                          <Badge size="sm" variant="ai" className="text-[9px] px-1 py-0">
+                          <Badge size="sm" variant="ai" className="text-[9px] px-1 py-0 font-mono">
                             {item.badge}
                           </Badge>
                         )}
@@ -229,6 +255,16 @@ export function AppSidebar() {
                     )}
                   </Link>
                 );
+
+                if (!isSidebarOpen) {
+                  return (
+                    <Tooltip key={item.href} content={item.title} side="right">
+                      {linkContent}
+                    </Tooltip>
+                  );
+                }
+
+                return <React.Fragment key={item.href}>{linkContent}</React.Fragment>;
               })}
             </nav>
           </div>
@@ -236,13 +272,17 @@ export function AppSidebar() {
       </div>
 
       {/* Footer info */}
-      {isSidebarOpen && (
-        <div className="border-t border-border p-3 text-[11px] text-muted-foreground flex items-center justify-between">
-          <span className="font-mono">v1.0.0</span>
+      {isSidebarOpen ? (
+        <div className="border-t border-border/80 p-3 text-[11px] text-muted-foreground flex items-center justify-between font-mono">
+          <span>v1.0.0</span>
           <span className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Connected
           </span>
+        </div>
+      ) : (
+        <div className="border-t border-border/80 p-3 flex justify-center">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" title="System Connected" />
         </div>
       )}
     </aside>
