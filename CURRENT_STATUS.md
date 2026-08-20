@@ -85,10 +85,11 @@ The backend NestJS application is fully implemented across 26 modules:
 
 ## Frontend
 
-| Area             | Status      | Details                                 |
-| ---------------- | ----------- | --------------------------------------- |
-| Next.js scaffold | ✅ Ready    | App Router skeleton in `apps/frontend/` |
-| Dashboard UI     | ⬜ Phase 14 | Analytics & Chat dashboard — next phase |
+| Area                        | Status      | Details                                                                                          |
+| --------------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
+| Next.js App Router          | ✅ Active   | Next.js 16.2.9, React 19.2.7, Tailwind CSS v4, Zustand 5, TanStack Query 5                       |
+| Foundation & Design System  | ✅ Complete | HSL Tokens, Dark/Light Theme, 14 UI Primitives, Shared Dev Components, Layout Shells, App Router |
+| Dashboard UI & Domain Views | ➡️ Next     | Phase 14 Deep Feature Implementation                                                             |
 
 ---
 

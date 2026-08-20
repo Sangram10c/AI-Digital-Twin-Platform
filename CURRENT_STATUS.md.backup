@@ -17,15 +17,15 @@
 | Project Type       | Enterprise Full Stack SaaS                                                    |
 | Current Version    | v1.0.0 (Active Development)                                                   |
 | Repository Status  | Active Development                                                            |
-| Development Method | Documentation First                                                           |
-| Architecture Style | Modular Monolith (Future Microservice Ready)                                  |
+| Development Method | Documentation First → Implementation                                          |
+| Architecture Style | Modular Monolith (Microservice-Ready)                                         |
 | Primary Goal       | Build an AI-powered Engineering Intelligence Platform for Software Developers |
 
 ---
 
 # 🎯 Project Vision
 
-Build an AI platform that understands engineering history from GitHub, Bitbucket, technical documentation, pull requests, commits, branches, issues and future integrations.
+Build an AI platform that understands engineering history from GitHub, technical documentation, pull requests, commits, branches, issues, and future integrations.
 
 Instead of searching manually across multiple engineering platforms, developers should be able to ask natural language questions such as:
 
@@ -42,28 +42,89 @@ The platform should become an AI Engineering Assistant capable of understanding 
 
 # 📍 Current Phase
 
-**Phase 2 — Core Features & Integrations**
+**Phase 13 — Analytics & Insights: ✅ COMPLETE**
 
-Current Focus:
-
-Hybrid Search Engine (doc 13) is implemented and shipped on branch `Hybrid-Search-Engine`. Next: Background Job Architecture (doc 14).
+**Next Phase: Phase 14 — Frontend Dashboard**
 
 ---
 
-# 📄 Current Document
+# 📊 Implementation Progress
 
-**14 - Background Job Architecture**
+## Backend
 
-Status:
+The backend NestJS application is fully implemented across 26 modules:
 
-🟡 In Progress
+| Domain                 | Modules                                             | Status        |
+| ---------------------- | --------------------------------------------------- | ------------- |
+| **Foundation**         | health, config, filters, interceptors               | ✅ Complete   |
+| **Identity**           | auth, identity, users, sessions                     | ✅ Complete   |
+| **Workspace**          | workspaces, organizations, settings                 | ✅ Complete   |
+| **GitHub Integration** | github, integrations                                | ✅ Complete   |
+| **Webhooks**           | webhook                                             | ✅ Complete   |
+| **Repository**         | repository                                          | ✅ Complete   |
+| **Knowledge**          | knowledge, knowledge-heuristics, documents, uploads | ✅ Complete   |
+| **AI Extraction**      | ai, ai-knowledge                                    | ✅ Complete   |
+| **Embeddings**         | embeddings                                          | ✅ Complete   |
+| **Search**             | search                                              | ✅ Complete   |
+| **Chat / RAG**         | chat, memory                                        | ✅ Complete   |
+| **Notifications**      | notifications                                       | ✅ Complete   |
+| **Timeline**           | timeline                                            | ✅ Complete   |
+| **Analytics**          | analytics                                           | ✅ Complete   |
+| **Google**             | google                                              | ✅ Scaffolded |
+| **Admin**              | admin                                               | ✅ Scaffolded |
 
-Progress:
+## Database
 
-- ✅ AI / RAG Architecture (embeddings + knowledge)
-- ✅ Search Engine Design (hybrid vector + keyword)
-- ⬜ Background Job Architecture documentation / gaps
-- ⬜ Security Architecture
+| Area              | Status      | Details                                       |
+| ----------------- | ----------- | --------------------------------------------- |
+| Schema            | ✅ Complete | 43 models across 8 domains in `schema.prisma` |
+| Migrations        | ✅ Applied  | 5 migrations (0_init + 4 timestamped)         |
+| GIN Indexes       | ✅ Restored | pg_trgm + tsvector + JSONB indexes active     |
+| HNSW/Vector Index | ✅ Active   | pgvector on `embeddings` table                |
+| Extensions        | ✅ Active   | `pgvector`, `pg_trgm`                         |
+
+## Frontend
+
+| Area                        | Status      | Details                                                                                          |
+| --------------------------- | ----------- | ------------------------------------------------------------------------------------------------ |
+| Next.js App Router          | ✅ Active   | Next.js 16.2.9, React 19.2.7, Tailwind CSS v4, Zustand 5, TanStack Query 5                       |
+| Foundation & Design System  | ✅ Complete | HSL Tokens, Dark/Light Theme, 14 UI Primitives, Shared Dev Components, Layout Shells, App Router |
+| Dashboard UI & Domain Views | ➡️ Next     | Phase 14 Deep Feature Implementation                                                             |
+
+---
+
+# 📄 Phases Progress
+
+| Phase | Description                  | Status      |
+| ----- | ---------------------------- | ----------- |
+| 01    | Monorepo & Foundation        | ✅ Complete |
+| 02    | Identity & Auth              | ✅ Complete |
+| 03    | Workspace Management         | ✅ Complete |
+| 04    | GitHub Integration           | ✅ Complete |
+| 05    | Repository Sync              | ✅ Complete |
+| 06    | Knowledge Processing         | ✅ Complete |
+| 07    | AI / RAG Architecture        | ✅ Complete |
+| 08    | Background Jobs (BullMQ)     | ✅ Complete |
+| 09    | Embedding Pipeline           | ✅ Complete |
+| 10    | Hybrid Search Engine         | ✅ Complete |
+| 11    | Hybrid AI Knowledge Pipeline | ✅ Complete |
+| 12    | AI Chat & Conversations      | ✅ Complete |
+| 13    | Analytics & Insights         | ✅ Complete |
+| 14    | Frontend Dashboard           | ➡️ Next     |
+| 15    | Production Deployment        | ⬜ Planned  |
+
+---
+
+# 📊 Overall Progress
+
+| Phase        | Progress |
+| ------------ | -------- |
+| Planning     | 100%     |
+| Architecture | 68%      |
+| Backend      | 0%       |
+| Frontend     | 0%       |
+| Testing      | 0%       |
+| Deployment   | 0%       |
 
 ---
 
@@ -77,14 +138,14 @@ Progress:
 | 04  | Non-Functional Requirements | ✅ Completed   |
 | 05  | System Architecture         | ✅ Completed   |
 | 06  | Technology Stack            | ✅ Completed   |
-| 07  | Database ERD                | ✅ Completed   |
-| 08  | Database Design             | ✅ Completed   |
-| 09  | API Design                  | ✅ Completed   |
+| 07  | Database ERD                | 🟡 In Progress |
+| 08  | Database Design             | ⬜ Not Started |
+| 09  | API Design                  | ⬜ Not Started |
 | 10  | Authentication Design       | ✅ Completed   |
 | 11  | GitHub Integration          | ✅ Completed   |
 | 12  | AI / RAG Architecture       | ✅ Completed   |
 | 13  | Search Engine Design        | ✅ Completed   |
-| 14  | Background Job Architecture | 🟡 In Progress |
+| 14  | Background Job Architecture | ✅ Completed   |
 | 15  | Security Architecture       | ⬜ Not Started |
 | 16  | Frontend Architecture       | ⬜ Not Started |
 | 17  | Backend Architecture        | ⬜ Not Started |
@@ -98,55 +159,14 @@ Progress:
 
 ---
 
-# 📊 Overall Progress
-
-| Phase        | Progress |
-| ------------ | -------- |
-| Planning     | 100%     |
-| Architecture | 86%      |
-| Backend      | 0%       |
-| Frontend     | 0%       |
-| AI           | 0%       |
-| Testing      | 0%       |
-| Deployment   | 0%       |
-
----
-
-# 🏗 Current Architecture
-
-```
-Next.js (Frontend)
-        │
-        ▼
-NestJS Backend
-        │
-        ▼
-PostgreSQL
-        │
-        ▼
-Redis
-        │
-        ▼
-BullMQ
-        │
-        ▼
-pgvector
-        │
-        ▼
-Ollama / OpenAI
-```
-
----
-
 # 🛠 Technology Stack
 
 ## Frontend
 
-- Next.js
-- React
+- Next.js 16 (App Router)
+- React 19
 - TypeScript
-- Tailwind CSS
-- shadcn/ui
+- Tailwind CSS + shadcn/ui
 - TanStack Query
 - Zustand
 
@@ -154,22 +174,21 @@ Ollama / OpenAI
 
 ## Backend
 
-- NestJS
+- NestJS 11
 - TypeScript
-- Prisma
+- Prisma ORM
 
 ---
 
 ## Database
 
-- PostgreSQL
-- pgvector
+- PostgreSQL 17 + pgvector + pg_trgm
 
 ---
 
 ## Queue
 
-- BullMQ
+- BullMQ (Redis ≥ 5.0 required)
 
 ---
 
@@ -179,71 +198,52 @@ Ollama / OpenAI
 
 ---
 
-## AI
+## AI Providers
 
-Development
-
-- Ollama
-
-Production
-
+- Google Gemini
+- Groq
 - OpenAI
-- Gemini
 - Anthropic
+- Voyage AI (embeddings)
+- Ollama (local development / fallback)
 
 ---
 
-# 🧠 Product Scope (MVP)
+# 🧠 Implemented Capabilities
 
-Version 1 includes:
+**All of the following are implemented and operational — not planned:**
 
-- User Authentication
-- GitHub Integration
-- Repository Synchronization
-- Branch History
-- Commit History
-- Pull Request Analysis
-- AI Chat
-- Semantic Search
-- Documentation Search
-- Repository Intelligence
-
----
-
-# 🚫 Not Included in MVP
-
-These features are planned for future versions:
-
-- Bitbucket
-- Gmail
-- Jira
-- Confluence
-- Slack
-- Google Drive
-- VS Code Extension
-- Team Collaboration
-- Organization Dashboard
+- User Authentication (JWT + Google OAuth + GitHub OAuth)
+- Workspace Management with RBAC
+- GitHub Integration (OAuth, multi-account, webhook ingestion)
+- Repository Synchronization (branches, commits, PRs, issues, releases, tags)
+- Knowledge Processing (normalize → chunk → BullMQ queue)
+- Heuristic Extraction (deterministic metadata without LLM calls)
+- AI Knowledge Extraction (digest pipeline, provider fallback chain)
+- Embedding Generation (pgvector, multi-provider, BullMQ queue, checksum skip)
+- Hybrid Search Engine (vector + FTS + RRF ranking, Redis cache, metrics)
+- Source-Code Ingestion (symbol-aware `.ts`/`.js` chunks for code-aware RAG)
+- AI Chat (10-step RAG pipeline: retrieve → prompt → generate → cite)
+- SSE Streaming Chat
+- Conversation Management (history, pin, archive, soft-delete)
+- Conversation Memory (selective long-term memory with importance scoring)
+- In-App Notifications
+- Timeline
+- Analytics & Insights (8 metric domains, BullMQ aggregation, Redis caching, snapshots)
 
 ---
 
-# 📌 Current Task
+# 📌 Next Phase
 
-Complete:
+**Phase 14 — Frontend Dashboard**
 
-14-background-job-architecture.md
+Objectives:
 
-Remaining:
-
-- Align BullMQ job docs with implemented queues (embeddings, knowledge, sync, search side-effects)
-- Document retry / DLQ / concurrency policies
-
----
-
-# 📌 Next Task
-
-After Background Job Architecture:
-
-15 — Security Architecture
+- Analytics dashboard UI
+- Chat interface with streaming
+- Repository overview and search UI
+- Workspace management UI
+- Authentication flows
 
 ---
 
@@ -251,16 +251,12 @@ After Background Job Architecture:
 
 Before implementing any feature:
 
-- Read CURRENT_STATUS.md
-- Read AGENT.md
-- Read the relevant architecture documents.
-- Understand the feature requirements.
-- Never skip documentation.
-- Never generate code without understanding the architecture.
-- Never modify unrelated modules.
-- Always maintain backward compatibility.
-- Follow project coding standards.
-- Update documentation after implementation.
+- Read `CURRENT_STATUS.md`
+- Read `.agents/AGENTS.md`
+- Read relevant architecture documents in `docs/`
+- Inspect the existing codebase before creating new code
+- Never modify completed and applied database migrations
+- Always maintain backward compatibility
 
 ---
 
@@ -268,71 +264,26 @@ Before implementing any feature:
 
 Do NOT:
 
-- Write Prisma schema before Database Design is completed.
-- Build APIs before API Design is approved.
-- Build UI before API contracts exist.
-- Store entire Git repositories.
-- Store binary files.
-- Store node_modules.
-- Store build folders.
-- Skip architecture review.
+- Reimplement AI/RAG/Chat/Analytics features (all backend phases complete)
+- Modify applied Prisma migrations
+- Store binary files, `node_modules`, or build folders
+- Skip architecture review for new cross-domain features
 
 ---
 
-# 📝 Recent Decisions
+# 📝 Resolved Decisions
 
-## Decision #001
-
-Store engineering metadata instead of entire repositories.
-
-Status:
-
-✅ Approved
-
----
-
-## Decision #002
-
-GitHub is the first supported integration.
-
-Status:
-
-✅ Approved
-
----
-
-## Decision #003
-
-AI answers will use RAG with PostgreSQL + pgvector.
-
-Status:
-
-✅ Approved
-
----
-
-## Decision #004
-
-Ollama will be used during development.
-
-Status:
-
-✅ Approved
-
----
-
-# ⚠ Pending Decisions
-
-- Full repository synchronization / crawl strategy (final details)
-- Embedding model selection
-- Search ranking algorithm
-- AI provider abstraction details
-- Multi-tenant support hardening
-
-Resolved recently:
-
-- ✅ Webhook architecture (BullMQ ingest + workers)
-- ✅ GitHub OAuth + token encryption at rest
+| #   | Decision                                                                | Status      |
+| --- | ----------------------------------------------------------------------- | ----------- |
+| 001 | Store engineering metadata instead of entire repositories               | ✅ Resolved |
+| 002 | GitHub is the first supported integration                               | ✅ Resolved |
+| 003 | AI answers use RAG with PostgreSQL + pgvector                           | ✅ Resolved |
+| 004 | Multi-provider AI abstraction (Groq, Gemini, OpenAI, Anthropic, Ollama) | ✅ Resolved |
+| 005 | Webhook architecture via BullMQ ingest + workers                        | ✅ Resolved |
+| 006 | GitHub OAuth + token encryption at rest                                 | ✅ Resolved |
+| 007 | Hybrid search: pgvector + PostgreSQL FTS + RRF ranking                  | ✅ Resolved |
+| 008 | Chat pipeline: 10-step RAG with fallback providers                      | ✅ Resolved |
+| 009 | Analytics: 8 domains, BullMQ, Redis caching, JSONB snapshots            | ✅ Resolved |
 
 ---
 
@@ -347,79 +298,21 @@ Deliver an enterprise-grade AI Engineering Intelligence Platform demonstrating:
 - Authentication
 - GitHub Integration
 - Scalable APIs
-- Modern Frontend
-- Production Deployment
+- Modern Frontend (Phase 14)
+- Production Deployment (Phase 15)
 
-This project should be portfolio-quality and demonstrate senior-level engineering practices.
+This project is portfolio-quality and demonstrates senior-level engineering practices.
 
 ---
 
 # 📅 Last Updated
 
-Update this section after every completed milestone.
-
-**Date:** 2026-07-17
+**Date:** 2026-08-19
 
 Current Milestone:
 
-✅ Background Job Architecture Documentation
-
-Current Focus:
-
-🟡 Background Job Architecture Documentation
+✅ Database ERD Documentation
 
 Next Milestone:
 
-Security Architecture Approved
-
----
-
-# 📢 Reminder
-
-**Do not rush into coding.**
-
-A strong architecture saves weeks of rework.
-
-Every implementation must follow this sequence:
-
-Requirement
-
-↓
-
-Discussion
-
-↓
-
-Architecture
-
-↓
-
-Documentation
-
-↓
-
-Review
-
-↓
-
-Database Design
-
-↓
-
-API Design
-
-↓
-
-Backend
-
-↓
-
-Frontend
-
-↓
-
-Testing
-
-↓
-
-Deployment
+Database Design Approved

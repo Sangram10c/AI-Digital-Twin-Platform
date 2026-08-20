@@ -1,6 +1,5 @@
-/**
- * Auth Types
- */
+import type { User } from './user.types';
+
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -13,17 +12,12 @@ export interface RegisterCredentials {
 }
 
 export interface AuthResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+  user: User;
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
 }
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
 }

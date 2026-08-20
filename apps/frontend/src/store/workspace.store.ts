@@ -5,12 +5,7 @@
  */
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-
-interface Workspace {
-  id: string;
-  name: string;
-  slug: string;
-}
+import type { Workspace } from '@/types/workspace.types';
 
 interface WorkspaceState {
   currentWorkspace: Workspace | null;

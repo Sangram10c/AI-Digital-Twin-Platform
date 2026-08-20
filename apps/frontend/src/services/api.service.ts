@@ -2,14 +2,13 @@
  * API Service
  *
  * Centralized Axios instance with interceptors for:
- * - Base URL configuration
+ * - Base URL configuration (from canonical api.config)
  * - JWT token injection
  * - Response error handling
  * - Request/response logging
  */
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { API_BASE_URL } from '@/config/api.config';
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -38,10 +37,8 @@ api.interceptors.response.use(
   async (error) => {
     // Handle 401 - redirect to login or refresh token
     if (error.response?.status === 401) {
-      // Token refresh logic will go here
       if (typeof window !== 'undefined') {
         localStorage.removeItem('access_token');
-        // window.location.href = '/login';
       }
     }
     return Promise.reject(error);

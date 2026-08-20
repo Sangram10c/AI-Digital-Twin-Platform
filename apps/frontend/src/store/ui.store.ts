@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 
 interface UIState {
+  isSidebarOpen: boolean;
   sidebarOpen: boolean;
   theme: 'light' | 'dark' | 'system';
   toggleSidebar: () => void;
@@ -17,11 +18,16 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   devtools(
     (set) => ({
+      isSidebarOpen: true,
       sidebarOpen: true,
       theme: 'system',
 
-      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-      setSidebarOpen: (open: boolean) => set({ sidebarOpen: open }),
+      toggleSidebar: () =>
+        set((state) => ({
+          isSidebarOpen: !state.isSidebarOpen,
+          sidebarOpen: !state.isSidebarOpen,
+        })),
+      setSidebarOpen: (open: boolean) => set({ isSidebarOpen: open, sidebarOpen: open }),
       setTheme: (theme: 'light' | 'dark' | 'system') => set({ theme }),
     }),
     { name: 'UIStore' },

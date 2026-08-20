@@ -1,28 +1,138 @@
 /**
- * Navigation Configuration
+ * Navigation Configuration Schemas
+ *
+ * Defines structured navigation hierarchies for:
+ * 1. Public Marketing Navigation
+ * 2. Authenticated Workspace Navigation (with WorkspaceRole checks)
+ * 3. Platform Administration Navigation (with UserRole.ADMIN checks)
  */
+
+import { UserRole } from '@/types/user.types';
+import { WorkspaceRole } from '@/types/workspace.types';
+
 export interface NavItem {
   title: string;
   href: string;
   icon?: string;
+  badge?: string;
   disabled?: boolean;
+  external?: boolean;
+  requiredUserRole?: UserRole[];
+  requiredWorkspaceRole?: WorkspaceRole[];
   children?: NavItem[];
 }
 
-export const mainNav: NavItem[] = [
-  { title: 'Dashboard', href: '/dashboard' },
-  { title: 'Workspaces', href: '/workspaces' },
-  { title: 'Documents', href: '/documents' },
-  { title: 'Knowledge', href: '/knowledge' },
-  { title: 'Analytics', href: '/analytics' },
+export interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+// 1. Public Website Navigation
+export const publicNav: NavItem[] = [
+  { title: 'Home', href: '/' },
+  { title: 'Features', href: '/features' },
+  { title: 'Architecture', href: '/#architecture' },
+  { title: 'Pricing', href: '/pricing' },
+  { title: 'Documentation', href: '/docs' },
 ];
 
-export const sidebarNav: NavItem[] = [
-  { title: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
-  { title: 'Workspaces', href: '/workspaces', icon: 'FolderOpen' },
-  { title: 'Documents', href: '/documents', icon: 'FileText' },
-  { title: 'AI Assistant', href: '/ai', icon: 'Bot' },
-  { title: 'Knowledge Base', href: '/knowledge', icon: 'Brain' },
-  { title: 'Analytics', href: '/analytics', icon: 'BarChart3' },
-  { title: 'Settings', href: '/settings', icon: 'Settings' },
+// 2. Workspace Application Sidebar (Categorized by Domain)
+export const getWorkspaceNavSections = (slug: string): NavSection[] => [
+  {
+    title: 'Core',
+    items: [
+      {
+        title: 'Dashboard',
+        href: `/${slug}/dashboard`,
+        icon: 'LayoutDashboard',
+      },
+      {
+        title: 'Repositories',
+        href: `/${slug}/repositories`,
+        icon: 'GitFork',
+      },
+      {
+        title: 'Timeline',
+        href: `/${slug}/timeline`,
+        icon: 'History',
+      },
+    ],
+  },
+  {
+    title: 'Intelligence',
+    items: [
+      {
+        title: 'AI Chat',
+        href: `/${slug}/chat`,
+        icon: 'Bot',
+        badge: 'RAG',
+      },
+      {
+        title: 'Hybrid Search',
+        href: `/${slug}/search`,
+        icon: 'Search',
+      },
+      {
+        title: 'Knowledge Base',
+        href: `/${slug}/knowledge`,
+        icon: 'Brain',
+      },
+      {
+        title: 'Analytics & Insights',
+        href: `/${slug}/analytics`,
+        icon: 'BarChart3',
+      },
+    ],
+  },
+  {
+    title: 'Management',
+    items: [
+      {
+        title: 'Workspace Settings',
+        href: `/${slug}/settings`,
+        icon: 'Settings',
+        requiredWorkspaceRole: [WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
+      },
+      {
+        title: 'Members & Roles',
+        href: `/${slug}/settings/members`,
+        icon: 'Users',
+        requiredWorkspaceRole: [WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
+      },
+      {
+        title: 'Integrations',
+        href: `/${slug}/settings/integrations`,
+        icon: 'PlugZap',
+        requiredWorkspaceRole: [WorkspaceRole.OWNER, WorkspaceRole.ADMIN],
+      },
+    ],
+  },
+];
+
+// 3. Platform Administration Navigation (UserRole.ADMIN only)
+export const adminNav: NavItem[] = [
+  {
+    title: 'Overview',
+    href: '/admin',
+    icon: 'ShieldAlert',
+    requiredUserRole: [UserRole.ADMIN],
+  },
+  {
+    title: 'Users & Tenants',
+    href: '/admin/users',
+    icon: 'Users',
+    requiredUserRole: [UserRole.ADMIN],
+  },
+  {
+    title: 'BullMQ Queues',
+    href: '/admin/queues',
+    icon: 'Cpu',
+    requiredUserRole: [UserRole.ADMIN],
+  },
+  {
+    title: 'Provider Metrics',
+    href: '/admin/metrics',
+    icon: 'Activity',
+    requiredUserRole: [UserRole.ADMIN],
+  },
 ];
