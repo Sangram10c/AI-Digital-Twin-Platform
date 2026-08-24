@@ -47,6 +47,8 @@ export interface Conversation {
   workspaceId: string;
   repositoryId?: string | null;
   repositoryName?: string | null;
+  aiProvider?: string | null;
+  aiModel?: string | null;
   messageCount: number;
   messages?: ChatMessage[];
   isPinned?: boolean;

@@ -217,6 +217,13 @@ export class ConversationOrchestratorService {
       latencyMs: aiResult.latencyMs,
     });
 
+    // Update conversation record's active provider & model
+    void this.conversationService.updateProvider(
+      conversationId,
+      aiResult.provider,
+      aiResult.model,
+    );
+
     // ── Step 9: Persist citations ─────────────────────────────
     let persistedCitations = this.citationBuilder.buildRefs(hits);
 

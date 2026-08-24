@@ -164,10 +164,23 @@ export class KnowledgeController {
     return this.queryService.getChunk(id, workspaceId);
   }
 
+  @Get('file')
+  @RequireKnowledgeWorkspace(WorkspacePermission.READ_WORKSPACE)
+  @ApiOperation({ summary: 'Get full file content by path in workspace' })
+  @ApiQuery({ name: 'workspaceId', required: true })
+  @ApiQuery({ name: 'filePath', required: true })
+  getFile(
+    @Query('workspaceId', ParseUUIDPipe) workspaceId: string,
+    @Query('filePath') filePath: string,
+  ) {
+    return this.queryService.getFileContent(workspaceId, filePath);
+  }
+
   @Get('statistics')
   @RequireKnowledgeWorkspace(WorkspacePermission.READ_WORKSPACE)
   @ApiOperation({ summary: 'Knowledge processing statistics and queue depths' })
   @ApiQuery({ name: 'workspaceId', required: true })
+  @ApiQuery({ name: 'statistics', required: false })
   getStatistics(@Query() query: KnowledgeStatisticsQueryDto) {
     return this.queryService.getStatistics(
       query.workspaceId,

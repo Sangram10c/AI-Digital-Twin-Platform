@@ -28,7 +28,7 @@ export function DropdownMenu({ children }: { children: React.ReactNode }) {
 
   return (
     <DropdownContext.Provider value={{ open, setOpen }}>
-      <div ref={containerRef} className="relative inline-block text-left w-full">
+      <div ref={containerRef} className="relative inline-block text-left">
         {children}
       </div>
     </DropdownContext.Provider>
@@ -48,7 +48,7 @@ export function DropdownMenuTrigger({
   return (
     <div
       onClick={() => context.setOpen((prev) => !prev)}
-      className={cn('cursor-pointer inline-flex items-center w-full', className)}
+      className={cn('cursor-pointer inline-flex items-center', className)}
     >
       {children}
     </div>
@@ -57,10 +57,12 @@ export function DropdownMenuTrigger({
 
 export function DropdownMenuContent({
   align = 'left',
+  side = 'bottom',
   className,
   children,
 }: {
   align?: 'left' | 'right' | 'center';
+  side?: 'top' | 'bottom';
   className?: string;
   children: React.ReactNode;
 }) {
@@ -68,16 +70,22 @@ export function DropdownMenuContent({
   if (!context?.open) return null;
 
   const alignStyles = {
-    left: 'left-0 origin-top-left',
-    right: 'right-0 origin-top-right',
-    center: 'left-1/2 -translate-x-1/2 origin-top',
+    left: 'left-0',
+    right: 'right-0',
+    center: 'left-1/2 -translate-x-1/2',
+  };
+
+  const sideStyles = {
+    bottom: 'top-full mt-2 origin-top',
+    top: 'bottom-full mb-2 origin-bottom',
   };
 
   return (
     <div
       className={cn(
-        'absolute z-50 mt-2 min-w-[14rem] overflow-hidden rounded-xl border border-slate-800/90 bg-[#0b101f] p-1.5 text-slate-200 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 animate-in fade-in-0 zoom-in-95 duration-100',
+        'absolute z-50 min-w-[14rem] overflow-hidden rounded-xl border border-slate-800/90 bg-[#0b101f] p-1.5 text-slate-200 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10 animate-in fade-in-0 zoom-in-95 duration-100',
         alignStyles[align],
+        sideStyles[side],
         className,
       )}
     >
@@ -120,10 +128,6 @@ export function DropdownMenuItem({
   );
 }
 
-export function DropdownMenuSeparator({ className }: { className?: string }) {
-  return <div className={cn('-mx-1 my-1.5 h-px bg-slate-800/80', className)} />;
-}
-
 export function DropdownMenuLabel({
   className,
   children,
@@ -134,11 +138,15 @@ export function DropdownMenuLabel({
   return (
     <div
       className={cn(
-        'px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 font-mono',
+        'px-3 py-1.5 text-[11px] font-semibold tracking-wider text-slate-400 uppercase font-mono',
         className,
       )}
     >
       {children}
     </div>
   );
+}
+
+export function DropdownMenuSeparator({ className }: { className?: string }) {
+  return <div className={cn('-mx-1 my-1 h-px bg-slate-800/80', className)} />;
 }

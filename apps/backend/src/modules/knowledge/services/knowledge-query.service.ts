@@ -311,4 +311,71 @@ export class KnowledgeQueryService {
     }
     return counts;
   }
+
+  async getFileContent(workspaceId: string, filePath: string) {
+    const cleanPath = filePath.replace(/^[./\\]+/, '');
+    const fileName = cleanPath.split('/').pop() || cleanPath;
+
+    // 1. Check knowledgeSource by path
+    const sources = await this.prisma.knowledgeSource.findMany({
+      where: {
+        workspaceId,
+        OR: [
+          { path: { contains: fileName, mode: 'insensitive' } },
+          { externalRefId: { contains: fileName, mode: 'insensitive' } },
+          { title: { contains: fileName, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        knowledgeChunks: {
+          orderBy: { chunkIndex: 'asc' },
+        },
+      },
+    });
+
+    if (sources.length > 0 && sources[0].knowledgeChunks.length > 0) {
+      const rawMetadata = this.asMetadata(sources[0].metadata);
+      const fullCode =
+        typeof rawMetadata.rawContent === 'string' &&
+        rawMetadata.rawContent.trim()
+          ? rawMetadata.rawContent
+          : sources[0].knowledgeChunks.map((c) => c.content).join('\n\n');
+
+      return {
+        filePath: sources[0].path || filePath,
+        repositoryId: sources[0].repositoryId,
+        content: fullCode,
+        chunkCount: sources[0].knowledgeChunks.length,
+      };
+    }
+
+    // 2. Check documentation by filePath
+    const doc = await this.prisma.documentation.findFirst({
+      where: {
+        repository: { workspaceId },
+        OR: [
+          { filePath: { contains: fileName, mode: 'insensitive' } },
+          { title: { contains: fileName, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        knowledgeChunks: {
+          orderBy: { chunkIndex: 'asc' },
+        },
+      },
+    });
+
+    if (doc) {
+      const fullCode =
+        doc.content || doc.knowledgeChunks.map((c) => c.content).join('\n\n');
+      return {
+        filePath: doc.filePath || filePath,
+        repositoryId: doc.repositoryId,
+        content: fullCode,
+        chunkCount: doc.knowledgeChunks.length,
+      };
+    }
+
+    return null;
+  }
 }

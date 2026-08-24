@@ -134,6 +134,61 @@ export const knowledgeService = {
   },
 
   /**
+   * Get single knowledge document with raw content
+   */
+  async getDocument(id: string, workspaceId: string): Promise<Record<string, unknown> | null> {
+    try {
+      const { data } = await api.get<Record<string, unknown>>(`/knowledge/documents/${id}`, {
+        params: { workspaceId },
+      });
+      return data;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Get single knowledge chunk
+   */
+  async getChunk(id: string, workspaceId: string): Promise<Record<string, unknown> | null> {
+    try {
+      const { data } = await api.get<Record<string, unknown>>(`/knowledge/chunks/${id}`, {
+        params: { workspaceId },
+      });
+      return data;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Get full file content by file path in workspace
+   */
+  async getFileContent(
+    workspaceId: string,
+    filePath: string,
+  ): Promise<{
+    filePath: string;
+    repositoryId?: string;
+    content: string;
+    chunkCount: number;
+  } | null> {
+    try {
+      const { data } = await api.get<{
+        filePath: string;
+        repositoryId?: string;
+        content: string;
+        chunkCount: number;
+      }>('/knowledge/file', {
+        params: { workspaceId, filePath },
+      });
+      return data;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Enqueue knowledge processing
    */
   async processWorkspace(

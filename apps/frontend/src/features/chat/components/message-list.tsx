@@ -10,6 +10,10 @@ interface MessageListProps {
   repositoryName?: string | null;
   onSelectPrompt: (prompt: string) => void;
   onCitationClick: (citation: Citation) => void;
+  onFileClick?: (filePath: string) => void;
+  userAvatar?: string | null;
+  userName?: string | null;
+  userFallback?: string;
 }
 
 export function MessageList({
@@ -17,27 +21,46 @@ export function MessageList({
   repositoryName,
   onSelectPrompt,
   onCitationClick,
+  onFileClick,
+  userAvatar,
+  userName,
+  userFallback,
 }: MessageListProps) {
-  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
+  // Auto-scroll ONLY this inner container on message change
   React.useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 overflow-y-auto flex items-center justify-center p-4">
+      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center p-4 sm:p-6">
         <ChatEmptyState repositoryName={repositoryName} onSelectPrompt={onSelectPrompt} />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-1">
-      {messages.map((msg) => (
-        <ChatMessage key={msg.id} message={msg} onCitationClick={onCitationClick} />
-      ))}
-      <div ref={bottomRef} />
+    <div
+      ref={containerRef}
+      className="flex-1 min-h-0 overflow-y-auto w-full px-4 sm:px-8 py-5 space-y-4 overscroll-contain"
+    >
+      <div className="w-full space-y-4">
+        {messages.map((msg) => (
+          <ChatMessage
+            key={msg.id}
+            message={msg}
+            onCitationClick={onCitationClick}
+            onFileClick={onFileClick}
+            userAvatar={userAvatar}
+            userName={userName}
+            userFallback={userFallback}
+          />
+        ))}
+      </div>
     </div>
   );
 }

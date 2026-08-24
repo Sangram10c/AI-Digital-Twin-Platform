@@ -24,7 +24,7 @@ export function Tooltip({
   };
 
   return (
-    <div
+    <span
       className="relative inline-flex items-center"
       onMouseEnter={() => setVisible(true)}
       onMouseLeave={() => setVisible(false)}
@@ -33,7 +33,7 @@ export function Tooltip({
     >
       {children}
       {visible && (
-        <div
+        <span
           role="tooltip"
           className={cn(
             'absolute z-50 whitespace-nowrap rounded-md bg-popover px-2.5 py-1 text-[11px] font-medium text-popover-foreground shadow-md border border-border animate-in fade-in-0 zoom-in-95 pointer-events-none',
@@ -42,8 +42,8 @@ export function Tooltip({
           )}
         >
           {content}
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 }

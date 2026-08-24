@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Avatar } from '@/components/ui/avatar';
 import { MarkdownRenderer } from '@/components/shared/markdown-renderer';
 import { cn } from '@/utils/cn';
@@ -9,11 +10,22 @@ import type { CitationProps } from '@/components/shared/citation-badge';
 interface ChatMessageProps {
   message: ChatMessageType;
   onCitationClick?: (citation: Citation) => void;
+  onFileClick?: (filePath: string) => void;
+  userAvatar?: string | null;
+  userName?: string | null;
+  userFallback?: string;
 }
 
-export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
-  const isUser = message.role === 'user';
-  const isAssistant = message.role === 'assistant';
+export function ChatMessage({
+  message,
+  onCitationClick,
+  onFileClick,
+  userAvatar,
+  userName,
+  userFallback = 'ME',
+}: ChatMessageProps) {
+  const isUser = message.role?.toLowerCase() === 'user';
+  const isAssistant = message.role?.toLowerCase() === 'assistant' || !isUser;
 
   // Map backend citations into MarkdownRenderer format
   const mappedCitations: CitationProps[] = (message.citations || []).map((c) => ({
@@ -30,24 +42,30 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        'flex w-full gap-3 py-3 px-4 transition-colors',
+        'flex w-full gap-3.5 py-2 transition-colors',
         isUser ? 'justify-end' : 'justify-start',
       )}
     >
+      {/* Bot Avatar on Left Corner (Assistant Only) */}
       {!isUser && (
-        <Avatar
-          fallback="AI"
-          size="sm"
-          className="mt-0.5 h-7 w-7 shrink-0 rounded-xl bg-blue-600/20 text-blue-400 border border-blue-500/30 text-[10px] font-bold"
-        />
+        <div className="relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl overflow-hidden border border-blue-500/40 bg-gradient-to-br from-blue-950/80 to-slate-950 shadow-md shadow-blue-500/10 ring-1 ring-blue-500/20">
+          <Image
+            src="/logo.png"
+            alt="AI Digital Twin"
+            width={32}
+            height={32}
+            className="h-full w-full object-cover"
+          />
+        </div>
       )}
 
+      {/* Message Bubble Container */}
       <div
         className={cn(
-          'relative max-w-2xl rounded-2xl p-4 text-xs transition-all',
+          'relative max-w-[85%] lg:max-w-[75%] rounded-2xl px-4 py-3 text-xs sm:text-[13px] transition-all',
           isUser
-            ? 'bg-blue-600 text-white rounded-br-xs shadow-md'
-            : 'bg-[#0b101f] text-slate-200 border border-slate-800/90 rounded-bl-xs shadow-lg ring-1 ring-white/5',
+            ? 'bg-blue-600 text-white rounded-tr-xs shadow-md shadow-blue-600/10'
+            : 'bg-[#0b101f] text-slate-200 border border-slate-800/90 rounded-tl-xs shadow-xl ring-1 ring-white/5',
         )}
       >
         {isAssistant ? (
@@ -60,9 +78,10 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
                   const raw = (message.citations || []).find((rawC) => rawC.index === c.number);
                   if (raw) onCitationClick?.(raw);
                 }}
+                onFileClick={onFileClick}
               />
             ) : message.isStreaming ? (
-              <div className="flex items-center gap-2 text-slate-400 py-1 font-mono text-[11px]">
+              <div className="flex items-center gap-2.5 text-slate-300 py-1 font-mono text-xs">
                 <span className="h-2 w-2 rounded-full bg-blue-500 animate-ping" />
                 <span>Generating grounded answer with repository citations...</span>
               </div>
@@ -70,21 +89,26 @@ export function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
 
             {/* Error Display */}
             {message.status === 'error' && (
-              <div className="mt-2 rounded-lg border border-rose-500/30 bg-rose-950/30 p-2 text-[11px] text-rose-300">
+              <div className="mt-2 rounded-lg border border-rose-500/30 bg-rose-950/30 p-2.5 text-xs text-rose-300">
                 {message.error || 'Failed to complete AI response. Please try again.'}
               </div>
             )}
           </div>
         ) : (
-          <p className="whitespace-pre-wrap leading-relaxed text-white">{message.content}</p>
+          <div className="whitespace-pre-wrap leading-relaxed text-white break-words">
+            {message.content}
+          </div>
         )}
       </div>
 
+      {/* User Avatar on Right Corner (User Only) */}
       {isUser && (
         <Avatar
-          fallback="ME"
-          size="sm"
-          className="mt-0.5 h-7 w-7 shrink-0 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold"
+          src={userAvatar}
+          alt={userName || 'User'}
+          fallback={userFallback}
+          size="md"
+          className="mt-0.5 shrink-0 ring-1 ring-white/20 shadow-md"
         />
       )}
     </div>

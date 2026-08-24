@@ -63,6 +63,14 @@ export class ConversationService {
       where: { id },
       include: {
         messages: {
+          include: {
+            citations: {
+              include: {
+                knowledgeChunk: true,
+                knowledgeSource: true,
+              },
+            },
+          },
           orderBy: { sequenceNumber: 'asc' },
         },
       },
@@ -74,7 +82,40 @@ export class ConversationService {
     if (conversation.userId !== userId) {
       throw new ForbiddenException('Access denied to this conversation');
     }
-    return conversation;
+
+    const messages = conversation.messages.map((m) => {
+      const mappedCitations = (m.citations || []).map((c, i) => {
+        const meta = (c.metadata as Record<string, unknown>) || {};
+        return {
+          id: c.id,
+          index: typeof meta.index === 'number' ? meta.index : i + 1,
+          knowledgeChunkId: c.knowledgeChunkId,
+          knowledgeSourceId: c.knowledgeSourceId,
+          documentationId: meta.documentationId as string | undefined,
+          repositoryId: meta.repositoryId as string | undefined,
+          repositoryName: meta.repositoryName as string | undefined,
+          filePath:
+            (meta.filePath as string) ||
+            c.knowledgeSource?.path ||
+            c.knowledgeSource?.title ||
+            undefined,
+          title:
+            c.knowledgeSource?.title || (meta.title as string) || undefined,
+          excerpt: c.excerpt || c.knowledgeChunk?.content || '',
+          relevanceScore: c.relevanceScore ?? 0.9,
+        };
+      });
+
+      return {
+        ...m,
+        citations: mappedCitations,
+      };
+    });
+
+    return {
+      ...conversation,
+      messages,
+    };
   }
 
   async listConversations(params: {
@@ -152,6 +193,20 @@ export class ConversationService {
       // If not pinned, silently ignore.
     }
     return { unpinned: true };
+  }
+
+  async updateProvider(id: string, provider: string, model?: string) {
+    try {
+      return await this.prisma.conversation.update({
+        where: { id },
+        data: {
+          aiProvider: provider,
+          aiModel: model ?? null,
+        },
+      });
+    } catch {
+      // Non-blocking
+    }
   }
 
   // ──────────────────────────────────────────────────────────

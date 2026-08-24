@@ -135,23 +135,31 @@ export const chatService = {
         let currentEvent = 'message';
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
+          if (!line) continue;
 
-          if (trimmed.startsWith('event:')) {
-            currentEvent = trimmed.slice(6).trim();
+          if (line.startsWith('event:')) {
+            currentEvent = line.slice(6).trim();
             continue;
           }
 
-          if (trimmed.startsWith('data:')) {
-            const dataStr = trimmed.slice(5).trim();
+          if (line.startsWith('data:')) {
+            // Respect SSE spec: 'data: ' (1 space after colon) or 'data:'
+            const dataStr = line.startsWith('data: ') ? line.slice(6) : line.slice(5);
 
             if (currentEvent === 'delta') {
               try {
                 const parsed = JSON.parse(dataStr);
-                callbacks.onDelta(
-                  typeof parsed === 'string' ? parsed : parsed.text || parsed.delta || '',
-                );
+                const token =
+                  typeof parsed === 'string'
+                    ? parsed
+                    : parsed.text !== undefined
+                      ? parsed.text
+                      : parsed.delta !== undefined
+                        ? parsed.delta
+                        : parsed.content !== undefined
+                          ? parsed.content
+                          : '';
+                callbacks.onDelta(token);
               } catch {
                 callbacks.onDelta(dataStr);
               }
@@ -178,7 +186,16 @@ export const chatService = {
               }
             } else {
               // Standard message fallback
-              callbacks.onDelta(dataStr);
+              try {
+                const parsed = JSON.parse(dataStr);
+                const token =
+                  typeof parsed === 'string'
+                    ? parsed
+                    : parsed.text || parsed.delta || parsed.content || '';
+                callbacks.onDelta(token);
+              } catch {
+                callbacks.onDelta(dataStr);
+              }
             }
           }
         }

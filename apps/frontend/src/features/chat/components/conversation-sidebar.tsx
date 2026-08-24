@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 import { ConversationItem } from './conversation-item';
 import { useConversations } from '../hooks/use-conversations';
+import { cn } from '@/utils/cn';
 import type { Conversation } from '@/types/chat.types';
 
 interface ConversationSidebarProps {
@@ -65,7 +66,10 @@ export function ConversationSidebar({
 
   return (
     <aside
-      className={`flex flex-col h-full w-full bg-[#080d1a] border-r border-slate-800/80 select-none ${className || ''}`}
+      className={cn(
+        'flex flex-col h-full w-72 sm:w-80 shrink-0 bg-[#080d1a] border-r border-slate-800/80 select-none z-10',
+        className,
+      )}
     >
       {/* Header with New Chat Button */}
       <div className="p-3 border-b border-slate-800/80 space-y-2.5">

@@ -27,7 +27,7 @@ export function CitationBadge({
   const iconMap = {
     FILE: (
       <svg
-        className="h-3 w-3"
+        className="h-3 w-3 shrink-0"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -40,7 +40,7 @@ export function CitationBadge({
     ),
     COMMIT: (
       <svg
-        className="h-3 w-3"
+        className="h-3 w-3 shrink-0"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -54,7 +54,7 @@ export function CitationBadge({
     ),
     PULL_REQUEST: (
       <svg
-        className="h-3 w-3"
+        className="h-3 w-3 shrink-0"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -69,7 +69,7 @@ export function CitationBadge({
     ),
     ISSUE: (
       <svg
-        className="h-3 w-3"
+        className="h-3 w-3 shrink-0"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -83,7 +83,7 @@ export function CitationBadge({
     ),
     DOCUMENTATION: (
       <svg
-        className="h-3 w-3"
+        className="h-3 w-3 shrink-0"
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="none"
@@ -100,18 +100,24 @@ export function CitationBadge({
   const displayText = path || title || 'Source';
 
   const tooltipContent = (
-    <div className="max-w-xs space-y-1 text-left">
-      <div className="flex items-center justify-between font-semibold">
+    <span className="block max-w-xs space-y-1 text-left">
+      <span className="flex items-center justify-between font-semibold">
         <span>{sourceType}</span>
         {relevanceScore !== undefined && (
-          <span className="text-[10px] text-ai">{(relevanceScore * 100).toFixed(0)}% match</span>
+          <span className="text-[10px] text-ai font-mono">
+            {(relevanceScore * 100).toFixed(0)}% match
+          </span>
         )}
-      </div>
-      {path && <p className="truncate text-muted-foreground font-mono text-[10px]">{path}</p>}
-      {excerpt && (
-        <p className="line-clamp-3 text-muted-foreground italic">&ldquo;{excerpt}&rdquo;</p>
+      </span>
+      {path && (
+        <span className="block truncate text-muted-foreground font-mono text-[10px]">{path}</span>
       )}
-    </div>
+      {excerpt && (
+        <span className="block line-clamp-3 text-muted-foreground italic">
+          &ldquo;{excerpt}&rdquo;
+        </span>
+      )}
+    </span>
   );
 
   return (
