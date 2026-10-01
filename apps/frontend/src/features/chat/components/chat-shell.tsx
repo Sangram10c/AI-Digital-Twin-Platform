@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/auth.store';
 import { chatService } from '@/services/chat.service';
 import { githubService } from '@/services/github.service';
+import { repositoryService } from '@/services/repository.service';
 import type { Repository } from '@/services/repository.service';
 import { useChatStream } from '../hooks/use-chat-stream';
 import { ConversationSidebar } from './conversation-sidebar';
@@ -21,13 +22,20 @@ interface ChatShellProps {
   workspaceId: string;
   workspaceSlug: string;
   initialConversationId?: string;
+  /** Repository ID passed via ?repositoryId= query param from the dashboard Chat button */
+  initialRepositoryId?: string;
 }
 
-export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }: ChatShellProps) {
+export function ChatShell({
+  workspaceId,
+  workspaceSlug,
+  initialConversationId,
+  initialRepositoryId,
+}: ChatShellProps) {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const [selectedRepo, setSelectedRepo] = React.useState<Repository | null>(null);
+  const [userSelectedRepo, setUserSelectedRepo] = React.useState<Repository | null>(null);
   const [customProvider, setCustomProvider] = React.useState<AIProvider | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [isNewChatModalOpen, setIsNewChatModalOpen] = React.useState(false);
@@ -38,6 +46,33 @@ export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }:
   } | null>(null);
 
   const activeConversationId = initialConversationId;
+
+  // ── Auto-select the repository when navigating from the dashboard Chat button ──
+  // Fetch all repos for the workspace and find the one matching initialRepositoryId.
+  const { data: allRepos } = useQuery({
+    queryKey: ['repositories', workspaceId],
+    queryFn: () => repositoryService.getRepositories(workspaceId),
+    enabled: Boolean(workspaceId && workspaceId !== 'default'),
+  });
+
+  // Fetch full conversation history from backend
+  const { data: conversationData } = useQuery({
+    queryKey: ['conversation', activeConversationId],
+    queryFn: async () => {
+      if (!activeConversationId) return null;
+      return chatService.getConversation(activeConversationId);
+    },
+    enabled: Boolean(activeConversationId),
+  });
+
+  // Derive repository from user choice or initial/conversation repo ID without cascading effects
+  const targetRepoId = initialRepositoryId || conversationData?.repositoryId;
+  const autoSelectedRepo = React.useMemo(() => {
+    if (!targetRepoId || !allRepos?.length) return null;
+    return allRepos.find((r) => r.id === targetRepoId) || null;
+  }, [targetRepoId, allRepos]);
+
+  const selectedRepo = userSelectedRepo ?? autoSelectedRepo;
 
   // Query connected GitHub accounts for current workspace to fetch GitHub avatar
   const { data: githubAccounts } = useQuery({
@@ -59,16 +94,6 @@ export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }:
     user?.firstName?.slice(0, 2).toUpperCase() ||
     (user?.email ? user.email.slice(0, 2).toUpperCase() : 'ME');
 
-  // Fetch full conversation history from backend
-  const { data: conversationData } = useQuery({
-    queryKey: ['conversation', activeConversationId],
-    queryFn: async () => {
-      if (!activeConversationId) return null;
-      return chatService.getConversation(activeConversationId);
-    },
-    enabled: Boolean(activeConversationId),
-  });
-
   const initialMessages = React.useMemo(() => {
     if (!conversationData?.messages) return [];
     return conversationData.messages.map((m) => ({
@@ -86,19 +111,20 @@ export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }:
   const selectedProvider: AIProvider =
     customProvider || (conversationData?.aiProvider?.toLowerCase() as AIProvider) || 'gemini';
 
-  const { messages, isStreaming, sendMessage, stopGeneration } = useChatStream({
+  const { messages, isStreaming, sendMessage, editMessage, stopGeneration } = useChatStream({
     workspaceId,
     conversationId: activeConversationId,
     repositoryId: selectedRepo?.id,
     provider: selectedProvider,
     initialMessages,
     onConversationCreated: (newId) => {
-      router.replace(`/${workspaceSlug}/chat/${newId}`);
+      const repoParam = selectedRepo ? `?repositoryId=${selectedRepo.id}` : '';
+      router.replace(`/${workspaceSlug}/chat/${newId}${repoParam}`);
     },
   });
 
   const handleStartNewChat = (repo: Repository | null) => {
-    setSelectedRepo(repo);
+    setUserSelectedRepo(repo);
     setIsNewChatModalOpen(false);
     router.push(`/${workspaceSlug}/chat`);
   };
@@ -119,9 +145,11 @@ export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }:
     });
   };
 
-  const currentTitle =
-    conversationData?.title || (selectedRepo ? selectedRepo.name : 'AI Digital Twin');
-  const currentRepoName = conversationData?.repositoryName || selectedRepo?.name;
+  // Badge & scope: use conversation's repo name → currently selected repo name → null (shows 'All Repositories')
+  const currentRepoName = conversationData?.repositoryName || selectedRepo?.name || null;
+
+  // Title: if scoped to a repository, display the repository name; otherwise conversation title → fallback 'AI Digital Twin'
+  const currentTitle = currentRepoName || conversationData?.title || 'AI Digital Twin';
 
   return (
     <div className="flex h-full w-full overflow-hidden bg-[#030712]">
@@ -167,6 +195,7 @@ export function ChatShell({ workspaceId, workspaceSlug, initialConversationId }:
           onSelectPrompt={(prompt) => sendMessage(prompt, selectedProvider)}
           onCitationClick={(citation) => setSelectedCitation(citation)}
           onFileClick={handleFileClick}
+          onEditPrompt={(msgId, newPrompt) => editMessage(msgId, newPrompt, selectedProvider)}
           userAvatar={userAvatar}
           userName={userName}
           userFallback={userFallback}

@@ -290,6 +290,7 @@ export class ConversationOrchestratorService {
     return this.formatter.format({
       conversationId,
       messageId: assistantMessage.id,
+      userMessageId: userMessage.id,
       rawText: aiResult.rawText,
       provider: aiResult.provider,
       model: aiResult.model,

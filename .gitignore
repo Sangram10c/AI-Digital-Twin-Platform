@@ -85,6 +85,8 @@ Desktop.ini
 # Misc
 # ========================================
 *.tgz
+*.rdb
+dump.rdb
 .cache/
 .temp/
 .tmp/

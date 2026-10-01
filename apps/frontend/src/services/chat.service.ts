@@ -15,7 +15,7 @@ import type {
 export interface StreamCallbacks {
   onDelta: (text: string) => void;
   onCitations?: (citations: Citation[]) => void;
-  onDone?: (data: { conversationId?: string; messageId?: string }) => void;
+  onDone?: (data: { conversationId?: string; messageId?: string; userMessageId?: string }) => void;
   onError?: (err: Error) => void;
 }
 
@@ -60,6 +60,19 @@ export const chatService = {
    */
   async deleteConversation(id: string): Promise<void> {
     await api.delete(`/chat/conversations/${id}`);
+  },
+
+  /**
+   * Truncate conversation messages from messageId onwards (for prompt editing)
+   */
+  async truncateFromMessage(
+    conversationId: string,
+    messageId: string,
+  ): Promise<{ deletedCount: number }> {
+    const { data } = await api.delete<{ deletedCount: number }>(
+      `/chat/conversations/${conversationId}/messages/${messageId}`,
+    );
+    return data;
   },
 
   /**

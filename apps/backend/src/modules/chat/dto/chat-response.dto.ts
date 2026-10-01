@@ -193,6 +193,9 @@ export class ConversationResponseDto {
   @ApiPropertyOptional({ nullable: true })
   repositoryId!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  repositoryName?: string | null;
+
   @ApiProperty()
   messageCount!: number;
 

@@ -220,6 +220,7 @@ export class ChatController {
         title: c.title,
         workspaceId: c.workspaceId,
         repositoryId: c.repositoryId,
+        repositoryName: c.repository?.name ?? null,
         messageCount: c._count.messages,
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
@@ -253,6 +254,7 @@ export class ChatController {
       title: conv.title,
       workspaceId: conv.workspaceId,
       repositoryId: conv.repositoryId,
+      repositoryName: conv.repository?.name ?? null,
       messageCount: conv.messages.length,
       messages: conv.messages.map((m) => ({
         id: m.id,
@@ -357,5 +359,37 @@ export class ChatController {
       page,
       limit: Math.min(limit, 100),
     });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // DELETE /api/v1/chat/conversations/:id/messages/:messageId
+  // Truncates from messageId onwards (inclusive) for editing prompts
+  // ──────────────────────────────────────────────────────────
+
+  @Delete('conversations/:id/messages/:messageId')
+  @ApiOperation({
+    summary:
+      'Truncate a conversation from a given message onward for editing prompts',
+  })
+  @ApiParam({ name: 'id', description: 'Conversation UUID', type: String })
+  @ApiParam({
+    name: 'messageId',
+    description: 'Message UUID to truncate from (inclusive)',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Messages truncated successfully.',
+  })
+  async truncateMessages(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('messageId') messageId: string,
+    @CurrentDeveloper() developer: AuthenticatedDeveloper,
+  ) {
+    return this.conversationService.truncateFromMessage(
+      id,
+      messageId,
+      developer.id,
+    );
   }
 }

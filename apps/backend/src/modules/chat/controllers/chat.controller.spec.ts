@@ -31,6 +31,7 @@ describe('ChatController', () => {
     pinConversation: jest.fn(),
     unpinConversation: jest.fn(),
     listMessages: jest.fn(),
+    truncateFromMessage: jest.fn(),
   };
 
   const mockPrisma = {};
@@ -305,6 +306,27 @@ describe('ChatController', () => {
         limit: 50,
       });
       expect(result.total).toBe(1);
+    });
+  });
+
+  describe('truncateMessages', () => {
+    it('should delegate message truncation to conversationService', async () => {
+      mockConversationService.truncateFromMessage.mockResolvedValue({
+        deletedCount: 2,
+      });
+
+      const result = await controller.truncateMessages(
+        'conv-1',
+        'msg-2',
+        mockDeveloper,
+      );
+
+      expect(mockConversationService.truncateFromMessage).toHaveBeenCalledWith(
+        'conv-1',
+        'msg-2',
+        'dev-1',
+      );
+      expect(result).toEqual({ deletedCount: 2 });
     });
   });
 });

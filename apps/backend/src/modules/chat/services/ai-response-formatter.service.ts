@@ -63,10 +63,41 @@ export class AiResponseFormatterService {
       return { answer, confidence, relatedFiles, relatedTopics };
     } catch {
       this.logger.debug(
-        'Could not parse provider JSON — using rawText as answer',
+        'Could not parse provider JSON directly — attempting regex extraction',
       );
+      // Fallback: extract answer property with regex
+      const answerMatch = rawText.match(/"answer"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+      if (answerMatch?.[1]) {
+        try {
+          const parsedAnswer = JSON.parse(`"${answerMatch[1]}"`) as unknown;
+          const unescaped =
+            typeof parsedAnswer === 'string' ? parsedAnswer : '';
+          return {
+            answer: unescaped,
+            confidence: undefined,
+            relatedFiles: [],
+            relatedTopics: [],
+          };
+        } catch {
+          // ignore
+        }
+      }
+
+      // If rawText itself looks like a raw JSON object string with "answer", strip the wrapper
+      let cleanFallback = rawText.trim();
+      if (cleanFallback.startsWith('{') && cleanFallback.includes('"answer"')) {
+        const fallbackMatch = cleanFallback.match(
+          /"answer"\s*:\s*"([\s\S]*?)"\s*,\s*"confidence"/,
+        );
+        if (fallbackMatch?.[1]) {
+          cleanFallback = fallbackMatch[1]
+            .replace(/\\n/g, '\n')
+            .replace(/\\"/g, '"');
+        }
+      }
+
       return {
-        answer: rawText.trim(),
+        answer: cleanFallback,
         confidence: undefined,
         relatedFiles: [],
         relatedTopics: [],
@@ -81,6 +112,7 @@ export class AiResponseFormatterService {
   format(params: {
     conversationId: string;
     messageId: string;
+    userMessageId?: string;
     rawText: string;
     provider: SupportedAiProvider;
     model: string;
@@ -106,6 +138,7 @@ export class AiResponseFormatterService {
     return {
       conversationId: params.conversationId,
       messageId: params.messageId,
+      userMessageId: params.userMessageId,
       answer: parsed.answer,
       citations: params.citations,
       sources: params.sources,
@@ -136,35 +169,48 @@ export class AiResponseFormatterService {
   }
 
   /**
-   * Extracts the first JSON object/array from a string.
-   * Handles provider outputs that wrap JSON in markdown fences.
+   * Extracts the first JSON object from a string.
+   * Only strips markdown fences when they wrap the entire JSON payload,
+   * avoiding accidental matching of inner code blocks.
    */
   private extractJson(text: string): string {
-    // Strip markdown fences.
-    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (fenced?.[1]) return fenced[1].trim();
+    const trimmed = text.trim();
 
-    // Find first { or [ and last matching } or ].
-    const firstBrace = text.indexOf('{');
-    const firstBracket = text.indexOf('[');
-
-    let start = -1;
-    if (
-      firstBrace !== -1 &&
-      (firstBracket === -1 || firstBrace < firstBracket)
-    ) {
-      start = firstBrace;
-    } else if (firstBracket !== -1) {
-      start = firstBracket;
+    // 1. Direct JSON test
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        JSON.parse(trimmed);
+        return trimmed;
+      } catch {
+        // Fall through
+      }
     }
 
-    if (start !== -1) {
-      const lastBrace = text.lastIndexOf('}');
-      const lastBracket = text.lastIndexOf(']');
-      const end = Math.max(lastBrace, lastBracket);
-      if (end > start) return text.slice(start, end + 1);
+    // 2. Strip outer markdown fences if the whole text is wrapped in ```json ... ```
+    const outerFenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
+    if (outerFenced?.[1]) {
+      const inner = outerFenced[1].trim();
+      try {
+        JSON.parse(inner);
+        return inner;
+      } catch {
+        // Fall through
+      }
     }
 
-    return text;
+    // 3. Find outer-most { and }
+    const firstBrace = trimmed.indexOf('{');
+    const lastBrace = trimmed.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      const candidate = trimmed.slice(firstBrace, lastBrace + 1);
+      try {
+        JSON.parse(candidate);
+        return candidate;
+      } catch {
+        // Fall through
+      }
+    }
+
+    return trimmed;
   }
 }

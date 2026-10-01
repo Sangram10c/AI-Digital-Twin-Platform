@@ -1,14 +1,16 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useWorkspaceStore } from '@/store/workspace.store';
 import { ChatShell } from '@/features/chat/components/chat-shell';
 import { LoadingSpinner } from '@/components/shared/loading-spinner';
 
 export default function ConversationDetailPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const workspaceSlug = (params?.workspaceSlug as string) || 'default';
   const conversationId = params?.conversationId as string;
+  const initialRepositoryId = searchParams?.get('repositoryId') ?? undefined;
   const { currentWorkspace, workspaces } = useWorkspaceStore();
 
   const activeWorkspace = currentWorkspace ||
@@ -31,6 +33,7 @@ export default function ConversationDetailPage() {
       workspaceId={activeWorkspace.id}
       workspaceSlug={workspaceSlug}
       initialConversationId={conversationId}
+      initialRepositoryId={initialRepositoryId}
     />
   );
 }

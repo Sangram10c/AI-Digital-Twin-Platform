@@ -20,6 +20,8 @@ const mockPrisma = {
     create: jest.fn(),
     findFirst: jest.fn(),
     findMany: jest.fn(),
+    findUnique: jest.fn(),
+    deleteMany: jest.fn(),
   },
   repository: {
     findFirst: jest.fn(),
@@ -199,6 +201,69 @@ describe('ConversationService', () => {
       const history = await service.getHistory('conv-1');
       expect(history[0]?.role).toBe('USER');
       expect(history[1]?.role).toBe('ASSISTANT');
+    });
+  });
+
+  describe('truncateFromMessage', () => {
+    it('should truncate messages from the given message sequence onwards', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'user-1',
+        deletedAt: null,
+      });
+      mockPrisma.message.findUnique.mockResolvedValue({
+        id: 'msg-2',
+        conversationId: 'conv-1',
+        sequenceNumber: 2,
+      });
+      mockPrisma.message.deleteMany.mockResolvedValue({ count: 2 });
+      mockPrisma.conversation.update.mockResolvedValue({});
+
+      const result = await service.truncateFromMessage(
+        'conv-1',
+        'msg-2',
+        'user-1',
+      );
+
+      expect(result).toEqual({ deletedCount: 2 });
+      expect(mockPrisma.message.deleteMany).toHaveBeenCalledWith({
+        where: {
+          conversationId: 'conv-1',
+          sequenceNumber: { gte: 2 },
+        },
+      });
+    });
+
+    it('should fallback to latest user message if messageId is an optimistic client ID', async () => {
+      mockPrisma.conversation.findUnique.mockResolvedValue({
+        id: 'conv-1',
+        userId: 'user-1',
+        deletedAt: null,
+      });
+      mockPrisma.message.findUnique.mockResolvedValue(null);
+      mockPrisma.message.findFirst.mockResolvedValue({
+        id: 'msg-real-1',
+        sequenceNumber: 1,
+        conversationId: 'conv-1',
+      });
+      mockPrisma.message.deleteMany.mockResolvedValue({ count: 2 });
+      mockPrisma.conversation.update.mockResolvedValue({});
+
+      const result = await service.truncateFromMessage(
+        'conv-1',
+        'user-1790246761980',
+        'user-1',
+      );
+
+      expect(result).toEqual({ deletedCount: 2 });
+      expect(mockPrisma.message.findFirst).toHaveBeenCalledWith({
+        where: {
+          conversationId: 'conv-1',
+          role: MessageRole.USER,
+        },
+        orderBy: { sequenceNumber: 'desc' },
+        select: { sequenceNumber: true, conversationId: true },
+      });
     });
   });
 });

@@ -102,6 +102,7 @@ export interface ParsedAiAnswer {
 export interface ChatResponse {
   conversationId: string;
   messageId: string;
+  userMessageId?: string;
   answer: string;
   citations: CitationRef[];
   sources: ChatSource[];

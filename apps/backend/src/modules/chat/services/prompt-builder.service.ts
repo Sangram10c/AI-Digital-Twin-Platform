@@ -88,6 +88,8 @@ export class PromptBuilderService {
       '4. File Paths: Mention file paths using inline code (e.g. `src/modules/auth/auth.service.ts`), NEVER dump raw unformatted paths into sentences.',
       '5. Grounded Citations: Cite referenced knowledge chunks at the end of sentences using [^N] notation where N is the chunk number.',
       '6. Grounding: Answer ONLY from the provided Knowledge Context. If information is not in the context, state it clearly.',
+      '7. Repository Stats & Files: When asked about file counts, programming languages, or repository inventory, refer to the Repository Scope & File Inventory provided below to give direct, exact numbers.',
+      '8. Readability & Spacing: Provide polished Markdown formatting like ChatGPT with clean headings, readable paragraphs, bullet points, and syntax-tagged code blocks.',
       '',
       'Return your answer as a JSON object with this exact shape:',
       JSON.stringify(
@@ -176,6 +178,7 @@ export class PromptBuilderService {
       const repos = await this.prisma.repository.findMany({
         where,
         select: {
+          id: true,
           name: true,
           fullName: true,
           language: true,
@@ -186,14 +189,45 @@ export class PromptBuilderService {
 
       if (repos.length === 0) return '';
 
-      const repoList = repos
-        .map(
-          (r) =>
-            `- ${r.fullName ?? r.name} (language: ${r.language ?? 'unknown'}, branch: ${r.defaultBranch ?? 'main'})`,
-        )
-        .join('\n');
+      const repoEntries = await Promise.all(
+        repos.map(async (r) => {
+          // Query sample file paths from knowledgeSource to provide accurate file counts & structure
+          const sources = await this.prisma.knowledgeSource.findMany({
+            where: { repositoryId: r.id, path: { not: null } },
+            select: { path: true },
+            take: 250,
+          });
 
-      return `## Repository Scope\n${repoList}\n`;
+          const extCounts: Record<string, number> = {};
+          for (const s of sources) {
+            if (!s.path) continue;
+            const extMatch = s.path.match(/\.([a-zA-Z0-9]+)$/);
+            const ext = extMatch ? `.${extMatch[1].toLowerCase()}` : 'other';
+            extCounts[ext] = (extCounts[ext] || 0) + 1;
+          }
+
+          const fileSummary = Object.entries(extCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([ext, count]) => `${count} ${ext}`)
+            .join(', ');
+
+          const samplePaths = sources
+            .map((s) => s.path)
+            .filter((p): p is string => Boolean(p))
+            .slice(0, 10);
+
+          let entry = `- **${r.fullName ?? r.name}** (language: ${r.language ?? 'unknown'}, branch: ${r.defaultBranch ?? 'main'})`;
+          if (sources.length > 0) {
+            entry += `\n  - Indexed files (${sources.length} total): ${fileSummary}`;
+            if (samplePaths.length > 0) {
+              entry += `\n  - Sample paths: ${samplePaths.join(', ')}`;
+            }
+          }
+          return entry;
+        }),
+      );
+
+      return `## Repository Scope & File Inventory\n${repoEntries.join('\n\n')}\n`;
     } catch (error) {
       this.logger.warn(
         `Failed to resolve repository context: ${error instanceof Error ? error.message : String(error)}`,

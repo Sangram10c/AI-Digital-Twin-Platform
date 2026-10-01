@@ -127,15 +127,30 @@ export function useChatStream({
               setIsStreaming(false);
               abortControllerRef.current = null;
               setLocalMessages((prev) =>
-                prev.map((msg) =>
-                  msg.id === assistantMessageId
-                    ? { ...msg, isStreaming: false, status: 'completed' }
-                    : msg,
-                ),
+                prev.map((msg) => {
+                  if (msg.id === assistantMessageId) {
+                    return {
+                      ...msg,
+                      id: data.messageId || assistantMessageId,
+                      isStreaming: false,
+                      status: 'completed',
+                    };
+                  }
+                  if (msg.id === userMessageId && data.userMessageId) {
+                    return {
+                      ...msg,
+                      id: data.userMessageId,
+                    };
+                  }
+                  return msg;
+                }),
               );
 
               // Invalidate conversation list so new titles appear in sidebar
               queryClient.invalidateQueries({ queryKey: ['conversations', workspaceId] });
+              if (data.conversationId) {
+                queryClient.invalidateQueries({ queryKey: ['conversation', data.conversationId] });
+              }
 
               if (data.conversationId && data.conversationId !== conversationId) {
                 onConversationCreated?.(data.conversationId);
@@ -184,11 +199,41 @@ export function useChatStream({
     ],
   );
 
+  const editMessage = React.useCallback(
+    async (messageId: string, newContent: string, customProvider?: AIProvider) => {
+      if (!newContent.trim() || isStreaming) return;
+
+      // 1. Truncate on backend if active conversation exists
+      if (conversationId) {
+        try {
+          await chatService.truncateFromMessage(conversationId, messageId);
+          queryClient.invalidateQueries({ queryKey: ['conversation', conversationId] });
+        } catch (err) {
+          console.warn('Truncate error on server:', err);
+        }
+      }
+
+      // 2. Truncate local messages array up to the edited prompt
+      const msgIndex = messages.findIndex((m) => m.id === messageId);
+      if (msgIndex !== -1) {
+        const retained = messages.slice(0, msgIndex);
+        setLocalMessages(retained);
+      } else {
+        setLocalMessages([]);
+      }
+
+      // 3. Immediately send the edited prompt to start fresh generation
+      await sendMessage(newContent, customProvider);
+    },
+    [conversationId, isStreaming, messages, queryClient, sendMessage],
+  );
+
   return {
     messages,
     isStreaming,
     error,
     sendMessage,
+    editMessage,
     stopGeneration,
     setLocalMessages,
   };

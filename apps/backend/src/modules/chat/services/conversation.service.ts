@@ -62,6 +62,9 @@ export class ConversationService {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id },
       include: {
+        repository: {
+          select: { id: true, name: true },
+        },
         messages: {
           include: {
             citations: {
@@ -136,6 +139,9 @@ export class ConversationService {
         skip,
         take: params.limit,
         include: {
+          repository: {
+            select: { id: true, name: true },
+          },
           _count: { select: { messages: true } },
         },
       }),
@@ -248,6 +254,62 @@ export class ConversationService {
       });
 
     return message;
+  }
+
+  /**
+   * Truncate messages starting from a specific message ID (inclusive).
+   * Used when editing a prompt: removes the old prompt and subsequent responses.
+   */
+  async truncateFromMessage(
+    conversationId: string,
+    messageId: string,
+    userId: string,
+  ): Promise<{ deletedCount: number }> {
+    await this.assertOwnership(conversationId, userId);
+
+    let targetMsg = await this.prisma.message
+      .findUnique({
+        where: { id: messageId },
+        select: { sequenceNumber: true, conversationId: true },
+      })
+      .catch(() => null);
+
+    if (!targetMsg || targetMsg.conversationId !== conversationId) {
+      // Fallback: If messageId is not found or is an optimistic client ID (e.g. user-xxx),
+      // truncate from the latest user message in this conversation.
+      targetMsg = await this.prisma.message.findFirst({
+        where: {
+          conversationId,
+          role: MessageRole.USER,
+        },
+        orderBy: { sequenceNumber: 'desc' },
+        select: { sequenceNumber: true, conversationId: true },
+      });
+    }
+
+    if (!targetMsg) {
+      return { deletedCount: 0 };
+    }
+
+    const deleteResult = await this.prisma.message.deleteMany({
+      where: {
+        conversationId,
+        sequenceNumber: { gte: targetMsg.sequenceNumber },
+      },
+    });
+
+    await this.prisma.conversation
+      .update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      })
+      .catch(() => {});
+
+    this.logger.debug(
+      `Truncated ${deleteResult.count} messages from conversation ${conversationId} starting at sequence ${targetMsg.sequenceNumber}`,
+    );
+
+    return { deletedCount: deleteResult.count };
   }
 
   /**

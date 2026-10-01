@@ -25,6 +25,7 @@ describe('ConversationOrchestratorService', () => {
     addMessage: jest.fn(),
     getHistory: jest.fn(),
     assertOwnership: jest.fn(),
+    updateProvider: jest.fn().mockResolvedValue({}),
   };
 
   const mockSearchService = {

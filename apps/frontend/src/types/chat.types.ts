@@ -77,6 +77,7 @@ export interface ChatRequestPayload {
 export interface ChatResponse {
   conversationId: string;
   messageId: string;
+  userMessageId?: string;
   answer: string;
   citations: Citation[];
   sources?: Array<{

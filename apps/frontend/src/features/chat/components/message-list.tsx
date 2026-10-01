@@ -11,6 +11,7 @@ interface MessageListProps {
   onSelectPrompt: (prompt: string) => void;
   onCitationClick: (citation: Citation) => void;
   onFileClick?: (filePath: string) => void;
+  onEditPrompt?: (messageId: string, newContent: string) => void;
   userAvatar?: string | null;
   userName?: string | null;
   userFallback?: string;
@@ -22,6 +23,7 @@ export function MessageList({
   onSelectPrompt,
   onCitationClick,
   onFileClick,
+  onEditPrompt,
   userAvatar,
   userName,
   userFallback,
@@ -46,7 +48,7 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 min-h-0 overflow-y-auto w-full px-4 sm:px-8 py-5 space-y-4 overscroll-contain"
+      className="flex-1 min-h-0 overflow-y-auto w-full px-4 sm:px-6 py-4 space-y-4 overscroll-contain"
     >
       <div className="w-full space-y-4">
         {messages.map((msg) => (
@@ -55,6 +57,7 @@ export function MessageList({
             message={msg}
             onCitationClick={onCitationClick}
             onFileClick={onFileClick}
+            onEditPrompt={onEditPrompt}
             userAvatar={userAvatar}
             userName={userName}
             userFallback={userFallback}
