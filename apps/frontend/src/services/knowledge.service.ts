@@ -39,15 +39,58 @@ interface RawKnowledgeDocument {
   id: string;
   title?: string | null;
   filePath?: string | null;
+  path?: string | null;
+  externalRefId?: string | null;
   documentType?: string;
   sourceType?: string;
   chunkCount?: number;
   _count?: { chunks?: number };
   isEmbedded?: boolean;
   status?: string;
+  processingStatus?: string;
   repositoryId?: string | null;
   repositoryName?: string | null;
+  repository?: { name?: string | null } | null;
+  metadata?: {
+    filePath?: string | null;
+    chunkCount?: number;
+    [key: string]: unknown;
+  } | null;
   updatedAt?: string;
+}
+
+interface RawChunk {
+  id: string;
+  knowledgeSourceId?: string;
+  documentationId?: string;
+  documentId?: string;
+  chunkIndex?: number;
+  content?: string;
+  contentPreview?: string;
+  tokenCount?: number;
+  isEmbedded?: boolean;
+  filePath?: string;
+  metadata?: { filePath?: string };
+  createdAt?: string;
+}
+
+interface RawKnowledgeStatistics {
+  totalDocuments?: number;
+  totalChunks?: number;
+  embeddedChunks?: number;
+  pendingJobs?: number;
+  totals?: {
+    knowledgeSources?: number;
+    documentationFiles?: number;
+    activeChunks?: number;
+  };
+  processingStatus?: {
+    COMPLETED?: number;
+  };
+  queues?: {
+    waiting?: number;
+    active?: number;
+  };
 }
 
 export const knowledgeService = {
@@ -56,28 +99,28 @@ export const knowledgeService = {
    */
   async listDocuments(workspaceId: string, page = 1, limit = 50): Promise<KnowledgeDocument[]> {
     try {
-      const { data } = await api.get<{ data?: RawKnowledgeDocument[] } | RawKnowledgeDocument[]>(
-        '/knowledge/documents',
-        {
-          params: { workspaceId, page, limit },
-        },
-      );
-      const list: RawKnowledgeDocument[] = Array.isArray(data)
-        ? data
-        : data && typeof data === 'object' && Array.isArray(data.data)
-          ? data.data
-          : [];
+      const { data } = await api.get<unknown>('/knowledge/documents', {
+        params: { workspaceId, page, limit },
+      });
+      const resData = data as Record<string, unknown> | RawKnowledgeDocument[];
+      const list: RawKnowledgeDocument[] = Array.isArray(resData)
+        ? resData
+        : Array.isArray((resData as { items?: unknown })?.items)
+          ? (resData as { items: RawKnowledgeDocument[] }).items
+          : Array.isArray((resData as { data?: unknown })?.data)
+            ? (resData as { data: RawKnowledgeDocument[] }).data
+            : [];
 
       return list.map((d: RawKnowledgeDocument) => ({
         id: d.id,
-        title: d.title || d.filePath || 'Document',
-        filePath: d.filePath,
+        title: d.title || d.filePath || d.path || d.externalRefId || 'Document',
+        filePath: d.filePath || d.path || d.metadata?.filePath || null,
         documentType: d.documentType || d.sourceType || 'DOCUMENTATION',
-        chunkCount: d.chunkCount || d._count?.chunks || 0,
-        isEmbedded: d.isEmbedded ?? true,
-        status: d.status || 'PROCESSED',
+        chunkCount: d.chunkCount ?? d.metadata?.chunkCount ?? d._count?.chunks ?? 0,
+        isEmbedded: d.isEmbedded ?? (d.processingStatus === 'COMPLETED' || (d.chunkCount ?? 0) > 0),
+        status: d.processingStatus || d.status || 'PROCESSED',
         repositoryId: d.repositoryId,
-        repositoryName: d.repositoryName,
+        repositoryName: d.repositoryName || d.repository?.name || null,
         updatedAt: d.updatedAt || new Date().toISOString(),
       }));
     } catch {
@@ -88,20 +131,34 @@ export const knowledgeService = {
   /**
    * List knowledge chunks
    */
-  async listChunks(workspaceId: string, page = 1, limit = 50): Promise<KnowledgeChunk[]> {
+  async listChunks(
+    workspaceId: string,
+    page = 1,
+    limit = 50,
+    documentId?: string,
+  ): Promise<KnowledgeChunk[]> {
     try {
-      const { data } = await api.get<{ data?: KnowledgeChunk[] } | KnowledgeChunk[]>(
-        '/knowledge/chunks',
-        {
-          params: { workspaceId, page, limit },
-        },
-      );
-      const list: KnowledgeChunk[] = Array.isArray(data)
-        ? data
-        : data && typeof data === 'object' && Array.isArray(data.data)
-          ? data.data
-          : [];
-      return list;
+      const { data } = await api.get<unknown>('/knowledge/chunks', {
+        params: { workspaceId, page, limit, ...(documentId ? { documentId } : {}) },
+      });
+      const resData = data as Record<string, unknown> | RawChunk[];
+      const list: RawChunk[] = Array.isArray(resData)
+        ? resData
+        : Array.isArray((resData as { items?: unknown })?.items)
+          ? (resData as { items: RawChunk[] }).items
+          : Array.isArray((resData as { data?: unknown })?.data)
+            ? (resData as { data: RawChunk[] }).data
+            : [];
+      return list.map((c: RawChunk) => ({
+        id: c.id,
+        documentId: c.knowledgeSourceId || c.documentationId || c.documentId || '',
+        chunkIndex: c.chunkIndex ?? 0,
+        content: c.content || c.contentPreview || '',
+        tokenCount: c.tokenCount ?? 0,
+        isEmbedded: c.isEmbedded ?? true,
+        filePath: c.filePath || c.metadata?.filePath,
+        createdAt: c.createdAt || new Date().toISOString(),
+      }));
     } catch {
       return [];
     }
@@ -112,17 +169,33 @@ export const knowledgeService = {
    */
   async getStatistics(workspaceId: string): Promise<KnowledgeStatistics> {
     try {
-      const { data } = await api.get<KnowledgeStatistics>('/knowledge/statistics', {
+      const { data } = await api.get<RawKnowledgeStatistics>('/knowledge/statistics', {
         params: { workspaceId },
       });
-      return (
-        data || {
+      if (!data) {
+        return {
           totalDocuments: 0,
           totalChunks: 0,
           embeddedChunks: 0,
           pendingJobs: 0,
-        }
-      );
+        };
+      }
+
+      const totalDocs =
+        data.totalDocuments ??
+        (data.totals?.knowledgeSources ?? 0) + (data.totals?.documentationFiles ?? 0);
+      const totalChunks = data.totalChunks ?? data.totals?.activeChunks ?? 0;
+      const embeddedChunks =
+        data.embeddedChunks ?? data.totals?.activeChunks ?? data.processingStatus?.COMPLETED ?? 0;
+      const pendingJobs =
+        data.pendingJobs ?? (data.queues?.waiting ?? 0) + (data.queues?.active ?? 0);
+
+      return {
+        totalDocuments: totalDocs,
+        totalChunks,
+        embeddedChunks,
+        pendingJobs,
+      };
     } catch {
       return {
         totalDocuments: 0,

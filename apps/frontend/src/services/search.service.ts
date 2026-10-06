@@ -14,8 +14,23 @@ export interface SearchHistoryItem {
   query: string;
   searchType: string;
   resultCount: number;
+  resultsCount?: number;
   executionTimeMs?: number;
+  latencyMs?: number;
+  repositoryId?: string | null;
   createdAt: string;
+}
+
+interface RawSearchHistoryItem {
+  id: string;
+  query: string;
+  searchType?: string;
+  resultsCount?: number;
+  resultCount?: number;
+  latencyMs?: number;
+  executionTimeMs?: number;
+  repositoryId?: string | null;
+  createdAt?: string;
 }
 
 export const searchService = {
@@ -97,12 +112,23 @@ export const searchService = {
   /**
    * Get search history for workspace
    */
-  async getHistory(workspaceId: string, limit = 10): Promise<SearchHistoryItem[]> {
+  async getHistory(workspaceId: string, limit = 20): Promise<SearchHistoryItem[]> {
     try {
-      const { data } = await api.get<SearchHistoryItem[]>('/search/history', {
+      const { data } = await api.get<RawSearchHistoryItem[]>('/search/history', {
         params: { workspaceId, limit },
       });
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      return data.map((item: RawSearchHistoryItem) => ({
+        id: item.id,
+        query: item.query,
+        searchType: item.searchType || 'HYBRID',
+        resultCount: item.resultsCount ?? item.resultCount ?? 0,
+        resultsCount: item.resultsCount ?? item.resultCount ?? 0,
+        executionTimeMs: item.latencyMs ?? item.executionTimeMs ?? 0,
+        latencyMs: item.latencyMs ?? item.executionTimeMs ?? 0,
+        repositoryId: item.repositoryId ?? null,
+        createdAt: item.createdAt || new Date().toISOString(),
+      }));
     } catch {
       return [];
     }

@@ -216,4 +216,45 @@ describe('RankingService', () => {
     expect(ranked).toHaveLength(1);
     expect(ranked[0].filePath).toContain('apps/backend/src');
   });
+
+  it('filters out pure vector-space noise when similarity is below threshold and no keyword/path match exists', () => {
+    const ranked = service.mergeAndRank({
+      vectorHits: [
+        { chunkId: 'noise-1', similarity: 0.22, rank: 1 },
+        { chunkId: 'noise-2', similarity: 0.18, rank: 2 },
+      ],
+      keywordHits: [],
+      chunks: [
+        chunk('noise-1', 'Header component layout and navigation code', {
+          file_path: 'apps/web-app/src/components/Header.tsx',
+        }),
+        chunk('noise-2', 'Photo lightbox modal state management', {
+          file_path: 'apps/web-app/src/components/PhotoLightboxModal.tsx',
+        }),
+      ],
+      previewChars: 100,
+      queryTerms: ['rrewqeqee'],
+    });
+
+    expect(ranked).toHaveLength(0);
+  });
+
+  it('preserves strong semantic vector hits even when keyword hits are absent', () => {
+    const ranked = service.mergeAndRank({
+      vectorHits: [{ chunkId: 'semantic-match', similarity: 0.72, rank: 1 }],
+      keywordHits: [],
+      chunks: [
+        chunk('semantic-match', 'Session expiration and token refresh logic', {
+          file_path: 'apps/backend/src/modules/session/session.service.ts',
+        }),
+      ],
+      previewChars: 100,
+      queryTerms: ['user', 'session', 'policy'],
+      mode: 'hybrid',
+    });
+
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0].chunkId).toBe('semantic-match');
+    expect(ranked[0].finalScore).toBeGreaterThanOrEqual(0.6);
+  });
 });

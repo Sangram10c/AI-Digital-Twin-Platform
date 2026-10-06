@@ -43,6 +43,9 @@ export default function KnowledgePage() {
   const [selectedDoc, setSelectedDoc] = React.useState<KnowledgeDocument | null>(null);
   const [isChunkDrawerOpen, setIsChunkDrawerOpen] = React.useState(false);
 
+  const [page, setPage] = React.useState(1);
+  const limit = 50;
+
   // Real knowledge documents
   const {
     data: documents = [],
@@ -50,8 +53,8 @@ export default function KnowledgePage() {
     isError: isDocsError,
     refetch: refetchDocs,
   } = useQuery({
-    queryKey: ['workspace', workspaceId, 'knowledge', 'documents'],
-    queryFn: () => knowledgeService.listDocuments(workspaceId),
+    queryKey: ['workspace', workspaceId, 'knowledge', 'documents', page],
+    queryFn: () => knowledgeService.listDocuments(workspaceId, page, limit),
     enabled: Boolean(workspaceId && workspaceId !== 'default'),
   });
 
@@ -64,9 +67,11 @@ export default function KnowledgePage() {
 
   // Real knowledge chunks for selected doc
   const { data: chunks = [] } = useQuery({
-    queryKey: ['workspace', workspaceId, 'knowledge', 'chunks'],
-    queryFn: () => knowledgeService.listChunks(workspaceId),
-    enabled: Boolean(workspaceId && workspaceId !== 'default' && isChunkDrawerOpen),
+    queryKey: ['workspace', workspaceId, 'knowledge', 'chunks', selectedDoc?.id],
+    queryFn: () => knowledgeService.listChunks(workspaceId, 1, 50, selectedDoc?.id),
+    enabled: Boolean(
+      workspaceId && workspaceId !== 'default' && isChunkDrawerOpen && selectedDoc?.id,
+    ),
   });
 
   const filteredDocs = React.useMemo(() => {
@@ -141,7 +146,21 @@ export default function KnowledgePage() {
         />
       ) : documents.length === 0 ? (
         <Card className="border border-slate-800 bg-[#0b101f] p-12 text-center rounded-2xl shadow-xl space-y-4">
-          <div className="flex justify-center text-4xl">📚</div>
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-400">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+              />
+            </svg>
+          </div>
           <div className="space-y-1">
             <h3 className="text-base font-bold text-white">No knowledge documents indexed yet</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
@@ -151,63 +170,101 @@ export default function KnowledgePage() {
           </div>
         </Card>
       ) : (
-        <div className="rounded-2xl border border-slate-800 bg-[#0b101f] overflow-hidden shadow-xl">
-          <Table>
-            <TableHeader className="bg-slate-900/60 border-b border-slate-800">
-              <TableRow>
-                <TableHead className="text-slate-400">Source Document</TableHead>
-                <TableHead className="text-slate-400">Type</TableHead>
-                <TableHead className="text-slate-400">Chunks</TableHead>
-                <TableHead className="text-slate-400">Embedding Status</TableHead>
-                <TableHead className="text-right text-slate-400">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDocs.map((src) => (
-                <TableRow
-                  key={src.id || src.filePath}
-                  className="border-b border-slate-800/60 hover:bg-slate-900/40"
-                >
-                  <TableCell className="font-semibold text-white">
-                    <div className="truncate max-w-xs sm:max-w-md">{src.title || src.filePath}</div>
-                    {src.filePath && (
-                      <div className="text-[10px] text-slate-400 font-mono truncate max-w-xs sm:max-w-md">
-                        {src.filePath}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" size="sm" className="font-mono text-[9px]">
-                      {src.documentType || 'CODE_SYMBOL'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-slate-300">
-                    {src.chunkCount} chunks
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={src.isEmbedded ? 'ai' : 'outline'}
-                      size="sm"
-                      dot
-                      className="font-mono text-[9px]"
-                    >
-                      {src.isEmbedded ? 'Embedded' : 'Pending'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleInspectDoc(src)}
-                      className="text-xs text-blue-400 hover:text-blue-300"
-                    >
-                      Inspect Chunks →
-                    </Button>
-                  </TableCell>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-[#0b101f] overflow-hidden shadow-xl">
+            <Table>
+              <TableHeader className="bg-slate-900/60 border-b border-slate-800">
+                <TableRow>
+                  <TableHead className="text-slate-400">Source Document</TableHead>
+                  <TableHead className="text-slate-400">Type</TableHead>
+                  <TableHead className="text-slate-400">Chunks</TableHead>
+                  <TableHead className="text-slate-400">Embedding Status</TableHead>
+                  <TableHead className="text-right text-slate-400">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredDocs.map((src) => (
+                  <TableRow
+                    key={src.id || src.filePath}
+                    className="border-b border-slate-800/60 hover:bg-slate-900/40"
+                  >
+                    <TableCell className="font-semibold text-white">
+                      <div className="truncate max-w-xs sm:max-w-md">
+                        {src.title || src.filePath}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono truncate max-w-xs sm:max-w-md pt-0.5">
+                        {src.repositoryName && (
+                          <span className="text-blue-400 font-medium">{src.repositoryName}</span>
+                        )}
+                        {src.repositoryName && src.filePath && <span>•</span>}
+                        {src.filePath && <span className="truncate">{src.filePath}</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" size="sm" className="font-mono text-[9px]">
+                        {src.documentType || 'CODE_SYMBOL'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-slate-300">
+                      {src.chunkCount} chunks
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={src.isEmbedded ? 'ai' : 'outline'}
+                        size="sm"
+                        dot
+                        className="font-mono text-[9px]"
+                      >
+                        {src.isEmbedded ? 'Embedded' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleInspectDoc(src)}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        Inspect Chunks →
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Pagination controls */}
+          {((statistics?.totalDocuments || 0) > limit || page > 1) && (
+            <div className="flex items-center justify-between text-xs text-slate-400 px-2 py-1">
+              <span>
+                Page {page} of{' '}
+                {Math.max(1, Math.ceil((statistics?.totalDocuments || documents.length) / limit))}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="h-8 text-xs border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    page >= Math.ceil((statistics?.totalDocuments || documents.length) / limit)
+                  }
+                  onClick={() => setPage((p) => p + 1)}
+                  className="h-8 text-xs border-slate-800 bg-slate-900 text-slate-300 hover:text-white"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

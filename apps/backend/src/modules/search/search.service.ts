@@ -60,14 +60,17 @@ export class SearchService {
     return this.hybrid(userId, dto);
   }
 
-  async history(workspaceId: string, userId: string, limit = 20) {
+  async history(workspaceId: string, userId?: string, limit = 20) {
     const take = Math.min(
       Math.max(limit, 1),
       this.config.get<number>('search.historyLimit') ??
         SEARCH_DEFAULTS.historyLimit,
     );
     return this.prisma.searchHistory.findMany({
-      where: { workspaceId, userId },
+      where: {
+        workspaceId,
+        ...(userId ? { userId } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       take,
       select: {
@@ -275,6 +278,7 @@ export class SearchService {
       queryTerms: processed.expandedTerms.length
         ? processed.expandedTerms
         : processed.keywords,
+      mode: input.mode,
     });
     const rankMs = Date.now() - rankStart;
 

@@ -46,7 +46,17 @@ export function RecentConversations({ conversations, slug }: RecentConversations
               <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-800/80 bg-slate-900/40 hover:border-slate-700 transition-colors group">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-950/60 border border-blue-500/20 text-blue-400 text-xs shrink-0">
-                    💬
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
                   </div>
                   <div className="min-w-0">
                     <div className="font-semibold text-xs text-white truncate group-hover:text-blue-400 transition-colors">

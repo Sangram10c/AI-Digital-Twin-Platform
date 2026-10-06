@@ -20,6 +20,10 @@ export const SEARCH_DEFAULTS = {
     freshness: 0.05,
     repository: 0.05,
   },
+  /** Minimum semantic similarity required for pure vector hits without keyword or path support. */
+  minSemanticSimilarity: 0.35,
+  /** Minimum composite score required for a search hit to be returned. */
+  minFinalScore: 0.25,
 } as const;
 
 /** English stop words used by QueryProcessor (lightweight, no NLP deps). */

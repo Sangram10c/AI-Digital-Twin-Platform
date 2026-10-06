@@ -1,6 +1,6 @@
 # 📊 Project Report — AI Engineering Intelligence Platform
 
-> Generated: October 6, 2026 at 11:56 AM
+> Generated: October 6, 2026 at 01:46 PM
 
 ---
 
@@ -64,8 +64,8 @@
 ## 🔀 Git Status
 
 - **Branch:** main
-- **Last Commit:** feat(chat): user prompt styling, resilient editing truncation, and markdown rendering
-- **Commit Hash:** 63c7909
+- **Last Commit:** feat(search): improve search quality with noise filtering and fix UI metrics
+- **Commit Hash:** eb8207f
 - **Author:** Sangram Chougule
 - **Status:** 🟡 Uncommitted changes
 
@@ -73,13 +73,7 @@
 
 - CURRENT_STATUS.md
 - CURRENT_STATUS.md.backup
-- apps/frontend/src/features/chat/components/chat-empty-state.tsx
-- apps/frontend/src/features/chat/components/chat-header.tsx
-- apps/frontend/src/features/chat/components/conversation-item.tsx
-- apps/frontend/src/features/chat/components/conversation-sidebar.tsx
-- apps/frontend/src/features/chat/components/repository-selector.tsx
-- apps/frontend/src/features/search/components/search-input.tsx
-- apps/frontend/src/features/search/components/source-viewer.tsx
+- apps/frontend/src/services/knowledge.service.ts
 
 ---
 

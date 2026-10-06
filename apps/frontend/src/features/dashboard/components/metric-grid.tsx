@@ -6,12 +6,13 @@ import { OverviewKPI } from '@/services/analytics.service';
 interface MetricGridProps {
   overview?: OverviewKPI;
   repoCount: number;
+  totalConversations?: number;
   slug: string;
 }
 
-export function MetricGrid({ overview, repoCount, slug }: MetricGridProps) {
+export function MetricGrid({ overview, repoCount, totalConversations, slug }: MetricGridProps) {
   const chunkCount = overview?.totalKnowledgeChunks ?? 0;
-  const chatCount = overview?.totalConversations ?? 0;
+  const chatCount = Math.max(overview?.totalConversations ?? 0, totalConversations ?? 0);
   const searchCount = overview?.totalSearches ?? 0;
 
   return (

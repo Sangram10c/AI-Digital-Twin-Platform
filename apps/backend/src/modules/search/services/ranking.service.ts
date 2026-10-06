@@ -6,6 +6,7 @@ import {
   NOISE_PATH_PENALTIES,
   RETRIEVAL_PATH_BOOSTS,
   SEARCH_DEFAULTS,
+  type SearchMode,
 } from '../constants/search.constants';
 import type {
   KeywordHit,
@@ -28,9 +29,17 @@ export class RankingService {
     preferSourceCode?: boolean;
     /** Original + expanded query terms for path/filename relevance. */
     queryTerms?: string[];
+    mode?: SearchMode;
   }): RankedSearchHit[] {
     const weights = this.weights();
     const rrfK = this.config.get<number>('search.rrfK') ?? SEARCH_DEFAULTS.rrfK;
+    const minSemanticSimilarity =
+      this.config.get<number>('search.minSemanticSimilarity') ??
+      SEARCH_DEFAULTS.minSemanticSimilarity;
+    const minFinalScore =
+      this.config.get<number>('search.minFinalScore') ??
+      SEARCH_DEFAULTS.minFinalScore;
+
     const queryTerms = (input.queryTerms ?? [])
       .map((t) => t.toLowerCase())
       .filter((t) => t.length >= 2);
@@ -50,6 +59,25 @@ export class RankingService {
       1e-9,
     );
 
+    // Channel-adaptive weights:
+    // If only vector or only keyword channel is active or produced hits,
+    // don't penalize the hit for the missing channel.
+    let semWeight = weights.semantic;
+    let kwWeight = weights.keyword;
+    if (
+      input.mode === 'vector' ||
+      (input.keywordHits.length === 0 && input.vectorHits.length > 0)
+    ) {
+      semWeight = 0.8;
+      kwWeight = 0;
+    } else if (
+      input.mode === 'keyword' ||
+      (input.vectorHits.length === 0 && input.keywordHits.length > 0)
+    ) {
+      semWeight = 0;
+      kwWeight = 0.8;
+    }
+
     const now = Date.now();
     const ranked: RankedSearchHit[] = [];
 
@@ -62,6 +90,35 @@ export class RankingService {
       const similarity = v?.similarity ?? 0;
       const keywordRaw = k?.keywordScore ?? 0;
       const keywordScore = keywordRaw / maxKw;
+
+      const metadata =
+        chunk.metadata && typeof chunk.metadata === 'object'
+          ? (chunk.metadata as Record<string, unknown>)
+          : {};
+
+      const pathBoost = this.pathRelevanceBoost(
+        chunk.file_path,
+        queryTerms,
+        metadata,
+        chunk.content,
+      );
+
+      const hasKeywordMatch = keywordRaw > 0;
+      const hasPathMatch = pathBoost > 0.02;
+
+      // Noise floor filter:
+      // If a hit was only retrieved via vector search (no keyword and no path match),
+      // its semantic similarity must meet the minimum threshold to prove relevance.
+      // Arbitrary/gibberish queries produce nearest neighbors with low similarity (0.15-0.30)
+      // in high-dimensional vector space that must be discarded.
+      if (
+        !hasKeywordMatch &&
+        !hasPathMatch &&
+        similarity < minSemanticSimilarity
+      ) {
+        continue;
+      }
+
       const qualityScore = this.quality(chunk);
       const freshnessScore = this.freshness(chunk.created_at, now);
       const repositoryPriority =
@@ -74,11 +131,6 @@ export class RankingService {
       const rrfScore =
         (v ? 1 / (rrfK + v.rank) : 0) + (k ? 1 / (rrfK + k.rank) : 0);
 
-      const metadata =
-        chunk.metadata && typeof chunk.metadata === 'object'
-          ? (chunk.metadata as Record<string, unknown>)
-          : {};
-
       const isSourceCode =
         metadata.documentType === 'source_code' ||
         /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(chunk.file_path ?? '');
@@ -90,22 +142,32 @@ export class RankingService {
             ? -0.08
             : 0;
 
-      const pathBoost = this.pathRelevanceBoost(
-        chunk.file_path,
-        queryTerms,
-        metadata,
-        chunk.content,
-      );
-
-      const finalScore =
-        weights.semantic * similarity +
-        weights.keyword * keywordScore +
-        weights.quality * qualityScore +
-        weights.freshness * freshnessScore +
-        weights.repository * repositoryPriority +
-        0.15 * rrfScore +
+      // Direct query relevance from active channels and path boosts
+      const baseRelevance =
+        semWeight * similarity +
+        kwWeight * keywordScore +
         sourceCodeBoost +
         pathBoost;
+
+      // Auxiliary factors (quality, freshness, repo priority) scale with base query relevance
+      // so high-quality files with zero query relevance do not artificially score ~28%.
+      const auxSum =
+        weights.quality * qualityScore +
+        weights.freshness * freshnessScore +
+        weights.repository * repositoryPriority;
+
+      const relevanceScale = Math.min(Math.max(baseRelevance, 0.2), 1.0);
+      const effectiveAux = auxSum * relevanceScale;
+
+      const finalScore = Math.max(
+        0,
+        Math.min(1.0, baseRelevance + effectiveAux + 0.15 * rrfScore),
+      );
+
+      // Minimum score cutoff to prevent borderline noise matches
+      if (finalScore < minFinalScore && !hasKeywordMatch && !hasPathMatch) {
+        continue;
+      }
 
       const previewSource =
         k?.headline?.replace(/<\/?b>/g, '') || chunk.content;

@@ -62,6 +62,13 @@ export default function SearchPage() {
     enabled: Boolean(workspaceId && workspaceId !== 'default'),
   });
 
+  // Fetch recent search history for workspace
+  const { data: searchHistory = [], isLoading: isHistoryLoading } = useQuery({
+    queryKey: ['workspace', workspaceId, 'search', 'history'],
+    queryFn: () => searchService.getHistory(workspaceId, 20),
+    enabled: Boolean(workspaceId && workspaceId !== 'default'),
+  });
+
   // Execute Search query
   const {
     data: searchResponse,
@@ -163,14 +170,30 @@ export default function SearchPage() {
         />
       ) : !activeQuery ? (
         <SearchEmptyState
-          onSelectSuggestion={(s) => {
+          searchHistory={searchHistory}
+          isLoadingHistory={isHistoryLoading}
+          onSelectSuggestion={(s, mode) => {
             setInputVal(s);
+            if (mode && (mode === 'hybrid' || mode === 'vector' || mode === 'keyword')) {
+              setSearchMode(mode as SearchMode);
+            }
             handleSearchSubmit(s);
           }}
         />
       ) : results.length === 0 ? (
-        <div className="p-12 text-center rounded-2xl border border-slate-800 bg-[#0b101f] space-y-2">
-          <div className="text-2xl">🔎</div>
+        <div className="p-12 text-center rounded-2xl border border-slate-800 bg-[#0b101f] space-y-3">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-400">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-4.3-4.3" />
+            </svg>
+          </div>
           <div className="text-sm font-semibold text-white">
             No results found for &quot;{activeQuery}&quot;
           </div>

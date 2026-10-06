@@ -72,6 +72,8 @@ export function useDashboard(workspaceId: string) {
     repositories: repositoriesQuery.data || [],
     health: healthQuery.data,
     conversations: conversationsQuery.data?.data || [],
+    totalConversations:
+      conversationsQuery.data?.total ?? conversationsQuery.data?.data?.length ?? 0,
     githubAccounts: githubQuery.data || [],
     aiSummary: aiQuery.data,
     searchSummary: searchQuery.data,

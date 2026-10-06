@@ -179,13 +179,10 @@ export class AnalyticsRepositoryService {
   async getKnowledgeMetrics(
     workspaceId: string,
     repositoryId?: string,
-    dateRange?: DateRange,
+    _dateRange?: DateRange,
   ) {
     const sourceWhere: Record<string, unknown> = {
       workspaceId,
-      ...(dateRange
-        ? { createdAt: { gte: dateRange.start, lte: dateRange.end } }
-        : {}),
     };
     if (repositoryId) {
       sourceWhere.repositoryId = repositoryId;
@@ -194,9 +191,6 @@ export class AnalyticsRepositoryService {
     const chunkWhere: Record<string, unknown> = {
       workspaceId,
       deletedAt: null,
-      ...(dateRange
-        ? { createdAt: { gte: dateRange.start, lte: dateRange.end } }
-        : {}),
     };
     if (repositoryId) {
       chunkWhere.repositoryId = repositoryId;
@@ -281,24 +275,28 @@ export class AnalyticsRepositoryService {
     repositoryId?: string,
     dateRange?: DateRange,
   ) {
-    const searchWhere: Record<string, unknown> = {
+    const baseSearchWhere: Record<string, unknown> = {
       workspaceId,
+      ...(repositoryId ? { repositoryId } : {}),
+    };
+
+    const searchWhere: Record<string, unknown> = {
+      ...baseSearchWhere,
       ...(dateRange
         ? { createdAt: { gte: dateRange.start, lte: dateRange.end } }
         : {}),
     };
-    if (repositoryId) {
-      searchWhere.repositoryId = repositoryId;
-    }
 
     const [
-      totalSearches,
+      totalSearchesAllTime,
+      totalSearchesPeriod,
       searchesByTypeGrouped,
       zeroResultCount,
       latencyAgg,
       cacheStats,
       topTerms,
     ] = await Promise.all([
+      this.prisma.searchHistory.count({ where: baseSearchWhere }),
       this.prisma.searchHistory.count({ where: searchWhere }),
       this.prisma.searchHistory.groupBy({
         by: ['searchType'],
@@ -341,22 +339,25 @@ export class AnalyticsRepositoryService {
         searchesByType.hybrid = group._count._all;
     }
 
+    const effectiveSearches =
+      totalSearchesPeriod > 0 ? totalSearchesPeriod : totalSearchesAllTime;
     const zeroResultRate =
-      totalSearches > 0 ? (zeroResultCount / totalSearches) * 100 : 0;
+      effectiveSearches > 0 ? (zeroResultCount / effectiveSearches) * 100 : 0;
     const cacheHitCount = cacheStats;
-    const totalCacheQueries = cacheHitCount + totalSearches;
+    const totalCacheQueries = cacheHitCount + effectiveSearches;
     const cacheHitRate =
       totalCacheQueries > 0 ? (cacheHitCount / totalCacheQueries) * 100 : 0;
 
     return {
-      totalSearches,
+      totalSearches: totalSearchesAllTime,
+      totalQueries: totalSearchesPeriod,
       searchesByType,
       zeroResultQueries: zeroResultCount,
       zeroResultRate: Math.round(zeroResultRate * 100) / 100,
       averageLatencyMs: Math.round(latencyAgg?._avg?.latencyMs || 0),
       p95LatencyMs: Math.round((latencyAgg?._avg?.latencyMs || 0) * 1.5),
       cacheHitCount,
-      cacheMissCount: totalSearches,
+      cacheMissCount: totalSearchesPeriod,
       cacheHitRate: Math.round(cacheHitRate * 100) / 100,
       topSearchTerms: topTerms.map((t) => ({
         query: t.query,
@@ -545,6 +546,10 @@ export class AnalyticsRepositoryService {
       workspaceId,
       deletedAt: null,
       ...(repositoryId ? { repositoryId } : {}),
+    };
+
+    const periodConvWhere: Record<string, unknown> = {
+      ...convWhere,
       ...(dateRange
         ? { createdAt: { gte: dateRange.start, lte: dateRange.end } }
         : {}),
@@ -567,17 +572,17 @@ export class AnalyticsRepositoryService {
         where: { ...convWhere, status: 'ARCHIVED' },
       }),
       this.prisma.message.count({
-        where: { conversation: convWhere },
+        where: { conversation: periodConvWhere },
       }),
       this.prisma.message.count({
-        where: { conversation: convWhere, role: MessageRole.USER },
+        where: { conversation: periodConvWhere, role: MessageRole.USER },
       }),
       this.prisma.message.count({
-        where: { conversation: convWhere, role: MessageRole.ASSISTANT },
+        where: { conversation: periodConvWhere, role: MessageRole.ASSISTANT },
       }),
       this.prisma.conversation.groupBy({
         by: ['userId'],
-        where: convWhere,
+        where: periodConvWhere,
         _count: { _all: true },
       }),
     ]);

@@ -35,6 +35,7 @@ export default function WorkspaceDashboardPage() {
     repositories,
     health,
     conversations,
+    totalConversations,
     githubAccounts,
     aiSummary,
     searchSummary,
@@ -71,7 +72,12 @@ export default function WorkspaceDashboardPage() {
       />
 
       {/* 2. Key Metrics Grid */}
-      <MetricGrid overview={overview} repoCount={repositories.length} slug={slug} />
+      <MetricGrid
+        overview={overview}
+        repoCount={repositories.length}
+        totalConversations={totalConversations}
+        slug={slug}
+      />
 
       {/* 3. Empty Workspace Onboarding Guide (if 0 repos) */}
       {isBrandNewWorkspace && (
@@ -95,7 +101,11 @@ export default function WorkspaceDashboardPage() {
         <div className="space-y-6">
           <RepositoryHealth health={health} />
 
-          <AiSearchSummary aiSummary={aiSummary} searchSummary={searchSummary} />
+          <AiSearchSummary
+            aiSummary={aiSummary}
+            searchSummary={searchSummary}
+            overview={overview}
+          />
         </div>
       </div>
     </div>

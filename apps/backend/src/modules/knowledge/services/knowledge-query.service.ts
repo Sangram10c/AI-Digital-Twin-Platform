@@ -33,6 +33,10 @@ export class KnowledgeQueryService {
       ...(params.sourceType ? { sourceType: params.sourceType as never } : {}),
     };
 
+    const docWhere: Prisma.DocumentationWhereInput = params.repositoryId
+      ? { repositoryId: params.repositoryId }
+      : { repository: { workspaceId: params.workspaceId } };
+
     const [sources, sourceCount, documentation, documentationCount] =
       await Promise.all([
         this.prisma.knowledgeSource.findMany({
@@ -40,21 +44,21 @@ export class KnowledgeQueryService {
           skip,
           take: limit,
           orderBy: { updatedAt: 'desc' },
+          include: { repository: { select: { name: true } } },
         }),
         this.prisma.knowledgeSource.count({ where }),
-        params.repositoryId
-          ? this.prisma.documentation.findMany({
-              where: { repositoryId: params.repositoryId },
-              skip,
+        params.sourceType && params.sourceType !== 'DOCUMENTATION'
+          ? Promise.resolve([])
+          : this.prisma.documentation.findMany({
+              where: docWhere,
+              skip: params.repositoryId ? skip : 0,
               take: limit,
               orderBy: { updatedAt: 'desc' },
-            })
-          : Promise.resolve([]),
-        params.repositoryId
-          ? this.prisma.documentation.count({
-              where: { repositoryId: params.repositoryId },
-            })
-          : Promise.resolve(0),
+              include: { repository: { select: { name: true } } },
+            }),
+        params.sourceType && params.sourceType !== 'DOCUMENTATION'
+          ? Promise.resolve(0)
+          : this.prisma.documentation.count({ where: docWhere }),
       ]);
 
     const sourceItems = sources
@@ -141,6 +145,7 @@ export class KnowledgeQueryService {
         chunkIndex: chunk.chunkIndex,
         tokenCount: chunk.tokenCount,
         contentHash: chunk.contentHash,
+        content: chunk.content,
         contentPreview: chunk.content.slice(0, 240),
         metadata: chunk.metadata,
         createdAt: chunk.createdAt,
@@ -207,10 +212,18 @@ export class KnowledgeQueryService {
     ]);
 
     const processingStatus = this.aggregateStatuses(statusGroups);
+    let pendingJobs = 0;
+    for (const q of Object.values(queueCounts)) {
+      pendingJobs += (q?.waiting ?? 0) + (q?.active ?? 0);
+    }
 
     return {
       workspaceId,
       repositoryId,
+      totalDocuments: sourceCount + documentationCount,
+      totalChunks: chunkCount,
+      embeddedChunks: chunkCount,
+      pendingJobs,
       totals: {
         knowledgeSources: sourceCount,
         documentationFiles: documentationCount,
@@ -226,6 +239,7 @@ export class KnowledgeQueryService {
       id: string;
       workspaceId: string;
       repositoryId: string | null;
+      repository?: { name: string } | null;
       sourceType: string;
       externalRefId: string;
       internalRefId: string | null;
@@ -244,18 +258,20 @@ export class KnowledgeQueryService {
       documentKind: KnowledgeDocumentKind.SOURCE,
       workspaceId: source.workspaceId,
       repositoryId: source.repositoryId,
+      repositoryName: source.repository?.name ?? null,
       sourceType: source.sourceType,
       externalRefId: source.externalRefId,
       internalRefId: source.internalRefId,
       title: source.title,
       url: source.url,
       path: source.path,
-      documentType: metadata.documentType,
-      processingStatus: metadata.processingStatus,
+      filePath: source.path ?? (metadata.filePath as string) ?? null,
+      documentType: metadata.documentType ?? source.sourceType,
+      processingStatus: metadata.processingStatus ?? 'COMPLETED',
       contentChecksum: metadata.contentChecksum,
       lastProcessedAt: metadata.lastProcessedAt,
       detectedLanguage: metadata.detectedLanguage,
-      chunkCount: metadata.chunkCount,
+      chunkCount: metadata.chunkCount ?? 0,
       rawContent: includeContent ? metadata.rawContent : undefined,
       metadata,
       createdAt: source.createdAt,
@@ -267,6 +283,7 @@ export class KnowledgeQueryService {
     documentation: {
       id: string;
       repositoryId: string;
+      repository?: { name: string } | null;
       title: string;
       content: string | null;
       filePath: string | null;
@@ -280,11 +297,14 @@ export class KnowledgeQueryService {
       id: documentation.id,
       documentKind: KnowledgeDocumentKind.DOCUMENTATION,
       repositoryId: documentation.repositoryId,
+      repositoryName: documentation.repository?.name ?? null,
       sourceType: 'DOCUMENTATION',
       externalRefId: documentation.filePath ?? documentation.id,
       title: documentation.title,
       path: documentation.filePath,
+      filePath: documentation.filePath,
       documentType: documentation.type.toLowerCase(),
+      chunkCount: 0,
       rawContent: includeContent ? documentation.content : undefined,
       createdAt: documentation.createdAt,
       updatedAt: documentation.updatedAt,
