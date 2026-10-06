@@ -124,10 +124,22 @@ export function ConversationSidebar({
             <span className="text-[10px] text-slate-400 font-mono">Loading history...</span>
           </div>
         ) : !hasAnyConversations ? (
-          <div className="text-center p-6 space-y-2">
-            <span className="text-2xl">💬</span>
-            <p className="text-xs text-slate-400 font-medium">No conversations found</p>
-            <p className="text-[11px] text-slate-400">Click &ldquo;New Chat&rdquo; to begin.</p>
+          <div className="flex flex-col items-center justify-center p-6 space-y-2 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-400">
+              <svg
+                className="h-5 w-5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <p className="text-xs text-slate-300 font-medium">No conversations found</p>
+            <p className="text-[11px] text-slate-500">Click &ldquo;New Chat&rdquo; to begin.</p>
           </div>
         ) : (
           <>

@@ -114,7 +114,19 @@ export function RepositorySelector({
                 )}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <span className="text-base shrink-0">📦</span>
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-800/80 border border-slate-700/50 text-blue-400">
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+                    </svg>
+                  </div>
                   <div className="flex flex-col truncate">
                     <span className="text-xs font-semibold text-white truncate">{repo.name}</span>
                     <span className="text-[10px] text-slate-400 font-mono truncate">

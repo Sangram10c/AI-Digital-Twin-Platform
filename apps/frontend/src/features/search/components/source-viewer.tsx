@@ -80,9 +80,20 @@ export function SourceViewer({ hit, slug, onClose }: SourceViewerProps) {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-xs h-7 px-2 text-slate-400 hover:text-white"
+              className="text-xs h-7 w-7 p-0 text-slate-400 hover:text-white"
             >
-              ✕
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </Button>
           )}
         </div>
@@ -116,7 +127,17 @@ export function SourceViewer({ hit, slug, onClose }: SourceViewerProps) {
           <div className="pt-1 flex gap-2">
             <Link href={`/${slug}/chat?repositoryId=${hit.repositoryId || ''}`} className="w-full">
               <Button variant="ai" size="sm" className="w-full text-xs gap-1.5 h-8">
-                <span>💬</span>
+                <svg
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
                 <span>Ask AI About This Match</span>
               </Button>
             </Link>
